@@ -1,19 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, ArrowRight, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
 import { BRAND } from '@/config/brand';
+import { ProductSummary } from '@/types/catalog';
+import { fetchFeaturedProducts } from '@/lib/api/catalog';
+import { ProductCard } from '@/features/catalog/components/ProductCard';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/Skeleton';
 import './HomePage.css';
 
 export const HomePage: React.FC = () => {
+  const [featuredProducts, setFeaturedProducts] = useState<ProductSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchFeaturedProducts()
+      .then(setFeaturedProducts)
+      .catch((err) => {
+        console.error('Error al cargar destacados:', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
   return (
     <div className="home-page">
       {/* Hero Section */}
       <section className="hero">
         <div className="container hero__container">
           <div className="hero__content">
-            <Badge variant="accent">Nueva Colección 2026</Badge>
+            <Badge variant="accent">Colección Dermatológica & Botánica</Badge>
             <h1 className="hero__title">
               Cuidado y bienestar formulado para tu piel
             </h1>
@@ -24,7 +42,7 @@ export const HomePage: React.FC = () => {
             <div className="hero__cta">
               <Link to="/catalogo">
                 <Button variant="primary" size="lg" rightIcon={<ArrowRight size={18} />}>
-                  Explorar Catálogo
+                  Explorar Catálogo Completo
                 </Button>
               </Link>
               <Link to="/nosotros">
@@ -34,6 +52,42 @@ export const HomePage: React.FC = () => {
               </Link>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Featured Products Section (Conectado a la API en vivo) */}
+      <section className="featured-section">
+        <div className="container">
+          <div className="featured-header">
+            <div>
+              <Badge variant="default">Selección Especial</Badge>
+              <h2 className="featured-title">Productos Destacados</h2>
+            </div>
+            <Link to="/catalogo" className="featured-more-link">
+              Ver todos los productos <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+
+          {isLoading ? (
+            <div className="featured-grid" aria-busy="true" aria-label="Cargando productos destacados">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <div key={idx} className="featured-skeleton">
+                  <Skeleton height="260px" borderRadius="var(--radius-lg)" />
+                  <div style={{ padding: 'var(--space-3)' }}>
+                    <Skeleton width="40%" height="14px" style={{ marginBottom: '8px' }} />
+                    <Skeleton width="80%" height="20px" style={{ marginBottom: '12px' }} />
+                    <Skeleton width="35%" height="22px" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="featured-grid">
+              {featuredProducts.slice(0, 4).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

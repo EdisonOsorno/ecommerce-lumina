@@ -1,6 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { HomePage } from '@/features/home/HomePage';
+import { CatalogPage } from '@/features/catalog/CatalogPage';
+import { ProductDetailPage } from '@/features/catalog/ProductDetailPage';
 
 export const router = createBrowserRouter([
   {
@@ -13,14 +15,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'catalogo',
-        element: (
-          <div className="container" style={{ padding: 'var(--space-12) var(--space-4)' }}>
-            <h2>Catálogo de Cosméticos & Belleza</h2>
-            <p style={{ marginTop: 'var(--space-2)', color: 'var(--color-text-secondary)' }}>
-              Módulo de catálogo en preparación para la Fase 2 con conexión a PostgreSQL.
-            </p>
-          </div>
-        ),
+        element: <CatalogPage />,
+      },
+      {
+        path: 'producto/:slug',
+        element: <ProductDetailPage />,
       },
       {
         path: 'carrito',
@@ -28,7 +27,7 @@ export const router = createBrowserRouter([
           <div className="container" style={{ padding: 'var(--space-12) var(--space-4)' }}>
             <h2>Tu Bolsa de Compras</h2>
             <p style={{ marginTop: 'var(--space-2)', color: 'var(--color-text-secondary)' }}>
-              Tu bolsa de compras está vacía actualmente.
+              Módulo de Carrito & Pedidos en preparación para la Fase 3.
             </p>
           </div>
         ),

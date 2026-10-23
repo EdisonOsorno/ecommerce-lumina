@@ -1,0 +1,122 @@
+.navbar {
+  background-color: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar__top-banner {
+  background-color: var(--color-brand-primary-light);
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  padding: 6px var(--space-4);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
+}
+
+.navbar__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+}
+
+.navbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.navbar__logo-icon {
+  color: var(--color-brand-accent);
+}
+
+.navbar__links {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.navbar__link {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+  padding: var(--space-1) 0;
+  position: relative;
+}
+
+.navbar__link:hover {
+  color: var(--color-brand-primary);
+}
+
+.navbar__link--active {
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.navbar__link--active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-brand-primary);
+  border-radius: var(--radius-full);
+}
+
+.navbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.navbar__action-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-main);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.navbar__action-btn:hover {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-brand-primary);
+}
+
+.navbar__action-btn--cart {
+  position: relative;
+}
+
+.navbar__cart-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-inverse);
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .navbar__action-text {
+    display: none;
+  }
+  .navbar__links {
+    gap: var(--space-3);
+  }
+}

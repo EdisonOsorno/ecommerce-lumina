@@ -1,0 +1,68 @@
+import React from 'react';
+import { Link, NavLink } from 'react-router-dom';
+import { ShoppingBag, User, Sparkles } from 'lucide-react';
+import { BRAND } from '@/config/brand';
+import './Navbar.css';
+
+export const Navbar: React.FC = () => {
+  return (
+    <header className="navbar">
+      <div className="navbar__top-banner">
+        <span>✨ Demostración técnica — Datos de productos y transacciones ficticias</span>
+      </div>
+      <div className="container navbar__main">
+        <Link to="/" className="navbar__brand" aria-label={`${BRAND.name} - Inicio`}>
+          <Sparkles className="navbar__logo-icon" aria-hidden="true" />
+          <span className="navbar__brand-name">{BRAND.name}</span>
+        </Link>
+
+        <nav className="navbar__links" aria-label="Navegación principal">
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              `navbar__link ${isActive ? 'navbar__link--active' : ''}`
+            }
+          >
+            Inicio
+          </NavLink>
+          <NavLink
+            to="/catalogo"
+            className={({ isActive }) =>
+              `navbar__link ${isActive ? 'navbar__link--active' : ''}`
+            }
+          >
+            Catálogo
+          </NavLink>
+          <NavLink
+            to="/nosotros"
+            className={({ isActive }) =>
+              `navbar__link ${isActive ? 'navbar__link--active' : ''}`
+            }
+          >
+            Sobre Lúmina
+          </NavLink>
+        </nav>
+
+        <div className="navbar__actions">
+          <Link
+            to="/cuenta/ingreso"
+            className="navbar__action-btn"
+            aria-label="Mi Cuenta / Iniciar Sesión"
+          >
+            <User size={20} aria-hidden="true" />
+            <span className="navbar__action-text">Cuenta</span>
+          </Link>
+          <Link
+            to="/carrito"
+            className="navbar__action-btn navbar__action-btn--cart"
+            aria-label="Carrito de compras (0 productos)"
+          >
+            <ShoppingBag size={20} aria-hidden="true" />
+            <span className="navbar__cart-badge" aria-hidden="true">0</span>
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+};

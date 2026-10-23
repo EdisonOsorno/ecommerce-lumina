@@ -1,0 +1,77 @@
+@import './tokens.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-family-base);
+  background-color: var(--color-bg-canvas);
+  color: var(--color-text-main);
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Accessibility: focus visible standards */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: var(--font-size-base);
+}
+
+/* Skip link for screen readers */
+.skip-to-content {
+  position: absolute;
+  top: -9999px;
+  left: var(--space-4);
+  background: var(--color-brand-primary);
+  color: var(--color-text-inverse);
+  padding: var(--space-2) var(--space-4);
+  z-index: 10000;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.skip-to-content:focus {
+  top: var(--space-4);
+}
+
+/* Layout container */
+.container {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}

@@ -38,14 +38,14 @@ VALUES
     (SELECT id FROM categories WHERE slug = 'cuidado-facial'),
     'Limpiador Facial Suave en Gel pH Neutro', 'limpiador-facial-suave-gel', 'LUM-FAC-004',
     'Limpieza profunda sin tirantez a base de extracto de centella asiática y caléndula. Respeta el manto ácido natural de la piel.',
-    'https://images.unsplash.com/photo-1556228722-d0b7194f4c2c?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1556228852-80b6e5eeff06?auto=format&fit=crop&w=600&q=80',
     38000.00, NULL, 0.1900, TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 ),
 (
     (SELECT id FROM categories WHERE slug = 'cuidado-capilar'),
     'Champú Sólido Fortalecedor Romero & Menta', 'champu-solido-fortalecedor-romero-menta', 'LUM-CAP-001',
     'Elaborado artesanalmente con tensioactivos suaves derivados del coco, aceite esencial de romero para estimular el cuero cabelludo y mentol refrescante.',
-    'https://images.unsplash.com/photo-1608248597359-009772c67b21?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1585238342024-78d387f4a707?auto=format&fit=crop&w=600&q=80',
     29000.00, NULL, 0.1900, TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 ),
 (

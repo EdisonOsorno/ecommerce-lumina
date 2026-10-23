@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ProductSummary } from '@/types/catalog';
 import { formatCurrency } from '@/lib/formatting/currency';
+import { BRAND } from '@/config/brand';
 import { Badge } from '@/components/ui/Badge';
 import './ProductCard.css';
 
@@ -19,6 +20,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             alt={product.name}
             loading="lazy"
             className="product-card__image"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = BRAND.defaultProductImage;
+            }}
           />
           <div className="product-card__badges">
             {product.hasDiscount && product.discountPercentage && (

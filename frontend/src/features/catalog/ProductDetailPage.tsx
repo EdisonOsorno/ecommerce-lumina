@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, ShieldCheck, Truck, Sparkles, Plus, Minus, Shop
 import { ProductDetail } from '@/types/catalog';
 import { fetchProductBySlug } from '@/lib/api/catalog';
 import { formatCurrency } from '@/lib/formatting/currency';
+import { BRAND } from '@/config/brand';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
@@ -113,6 +114,10 @@ export const ProductDetailPage: React.FC = () => {
                 src={product.imageUrl}
                 alt={product.name}
                 className="product-detail__image"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = BRAND.defaultProductImage;
+                }}
               />
               {product.hasDiscount && product.discountPercentage && (
                 <Badge variant="danger" className="product-detail__badge">

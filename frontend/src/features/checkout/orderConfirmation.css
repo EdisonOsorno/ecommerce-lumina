@@ -1,0 +1,235 @@
+/* ====================================================================
+ * Comprobante de Compra (/pedido/confirmacion/:orderNumber)
+ * Incluye estilos @media print para imprimir/descargar como factura formal.
+ * ==================================================================== */
+
+.confirmation-page {
+  padding: var(--space-10) 0;
+}
+
+.confirmation-card {
+  max-width: 720px;
+  margin: 0 auto;
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-8) var(--space-8);
+}
+
+.confirmation-card__hero {
+  text-align: center;
+}
+
+.confirmation-card__success-icon {
+  color: var(--color-success);
+  margin-bottom: var(--space-3);
+}
+
+.confirmation-card__title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
+}
+
+.confirmation-card__order-number {
+  display: inline-block;
+  margin: var(--space-3) 0 var(--space-2);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+  background-color: var(--color-brand-primary-light);
+  border: 1px dashed var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+}
+
+.confirmation-card__status {
+  margin-top: var(--space-2);
+}
+
+/* Notificación destacada del correo (requisito del Product Owner) */
+.confirmation-email-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+}
+
+/* ---------- Factura imprimible ---------- */
+
+.confirmation-invoice {
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-6);
+}
+
+.confirmation-invoice__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-5);
+}
+
+.confirmation-invoice__brand {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+}
+
+.confirmation-invoice__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.confirmation-invoice__meta {
+  margin-bottom: var(--space-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.confirmation-invoice__meta strong {
+  color: var(--color-text-main);
+}
+
+.confirmation-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.confirmation-table th {
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-main);
+  border-bottom: 2px solid var(--color-border-default);
+  padding: var(--space-2) var(--space-2);
+}
+
+.confirmation-table caption {
+  caption-side: top;
+  text-align: left;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  padding-bottom: var(--space-2);
+}
+
+.confirmation-table td {
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: var(--space-3) var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.confirmation-table td:last-child,
+.confirmation-table th:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.confirmation-totals {
+  margin-top: var(--space-4);
+  margin-left: auto;
+  width: min(320px, 100%);
+  font-size: var(--font-size-sm);
+}
+
+.confirmation-totals__row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-1) 0;
+  color: var(--color-text-secondary);
+}
+
+.confirmation-totals__row--grand {
+  border-top: 1px solid var(--color-border-default);
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-main);
+}
+
+/* ---------- Acciones ---------- */
+
+.confirmation-actions {
+  margin-top: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.confirmation-actions__primary {
+  width: 100%;
+}
+
+.confirmation-actions__link {
+  font-size: var(--font-size-sm);
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.confirmation-actions__link:hover {
+  color: var(--color-brand-primary-hover);
+  text-decoration: underline;
+}
+
+/* Estados de carga y error */
+.confirmation-loading {
+  padding: var(--space-12) 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+/* ====================================================================
+ * IMPRESIÓN: al imprimir/descargar, queda un comprobante formal
+ * (sin navbar, footer, banners ni botones de acción).
+ * ==================================================================== */
+
+@media print {
+  .navbar,
+  .footer,
+  .no-print,
+  .skip-to-content {
+    display: none !important;
+  }
+
+  body,
+  #root {
+    background-color: #ffffff !important;
+  }
+
+  .confirmation-page {
+    padding: 0 !important;
+  }
+
+  .confirmation-card {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .confirmation-card__title {
+    font-size: 22px;
+  }
+
+  .confirmation-card__order-number {
+    border-style: solid;
+    background-color: transparent;
+  }
+
+  .confirmation-actions {
+    display: none !important;
+  }
+}

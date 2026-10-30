@@ -6,6 +6,8 @@ import { ProductDetailPage } from '@/features/catalog/ProductDetailPage';
 import { CartPage } from '@/features/cart/CartPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
+import { CheckoutPage } from '@/features/checkout/CheckoutPage';
+import { OrderConfirmationPage } from '@/features/checkout/OrderConfirmationPage';
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +37,14 @@ export const router = createBrowserRouter([
       {
         path: 'cuenta/registro',
         element: <RegisterPage />,
+      },
+      {
+        path: 'checkout',
+        element: <CheckoutPage />,
+      },
+      {
+        path: 'pedido/confirmacion/:orderNumber',
+        element: <OrderConfirmationPage />,
       },
       {
         path: 'nosotros',

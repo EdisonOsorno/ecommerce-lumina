@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { ShoppingBag, Trash2, Minus, Plus, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useCart } from '@/features/cart/CartContext';
 import { formatCurrency } from '@/lib/formatting/currency';
+import { calculateShippingCost, FREE_SHIPPING_THRESHOLD } from '@/lib/pricing/shipping';
 import { BRAND } from '@/config/brand';
 import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
 import './CartPage.css';
 
 /**
@@ -12,6 +14,9 @@ import './CartPage.css';
  *
  * Muestra todos los productos agregados, permite ajustar cantidades,
  * eliminar items, vaciar el carrito y ver el resumen de totales.
+ *
+ * El botón "Proceder al pago" navega a /checkout, donde el backend
+ * recalcula los precios oficiales y aplica la regla de envío.
  *
  * Cuando el carrito está vacío, muestra un estado amigable con
  * enlace al catálogo.
@@ -49,6 +54,9 @@ export const CartPage: React.FC = () => {
   const vatRate = 0.19;
   const subtotalSinIva = totalPrice / (1 + vatRate);
   const ivaTotal = totalPrice - subtotalSinIva;
+  const shippingCost = calculateShippingCost(totalPrice);
+  const totalConEnvio = totalPrice + shippingCost;
+  const freeShippingGap = FREE_SHIPPING_THRESHOLD - totalPrice;
 
   return (
     <div className="container cart-page">
@@ -155,29 +163,40 @@ export const CartPage: React.FC = () => {
           </div>
           <div className="cart-summary__row">
             <span>Envío</span>
-            <span style={{ color: 'var(--color-primary)', fontWeight: 500 }}>Gratis</span>
+            {shippingCost === 0 ? (
+              <span style={{ color: 'var(--color-success)', fontWeight: 500 }}>Gratis</span>
+            ) : (
+              <span>{formatCurrency(shippingCost)}</span>
+            )}
           </div>
           <div className="cart-summary__row cart-summary__row--total">
-            <span>Total</span>
-            <span>{formatCurrency(totalPrice)}</span>
+            <span>Total (con envío)</span>
+            <span>{formatCurrency(totalConEnvio)}</span>
           </div>
+
+          {freeShippingGap > 0 && (
+            <Alert
+              variant="info"
+              style={{ marginTop: 'var(--space-4)' }}
+            >
+              ¡Agrega {formatCurrency(freeShippingGap)} más a tu bolsa para obtener Envío Gratis!
+            </Alert>
+          )}
           <p className="cart-summary__iva-note">
             Precios con IVA incluido
           </p>
 
           <div className="cart-summary__actions">
-            <Button
-              variant="primary"
-              size="lg"
-              style={{ width: '100%' }}
-              leftIcon={<ArrowRight size={18} />}
-              disabled
-            >
-              Proceder al pago
-            </Button>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-              El módulo de checkout se habilitará en la sub-fase 3C.
-            </p>
+            <Link to="/checkout">
+              <Button
+                variant="primary"
+                size="lg"
+                style={{ width: '100%' }}
+                leftIcon={<ArrowRight size={18} />}
+              >
+                Proceder al pago
+              </Button>
+            </Link>
             <button
               type="button"
               className="cart-summary__clear-btn"

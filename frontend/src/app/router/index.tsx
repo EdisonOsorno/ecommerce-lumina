@@ -4,6 +4,8 @@ import { HomePage } from '@/features/home/HomePage';
 import { CatalogPage } from '@/features/catalog/CatalogPage';
 import { ProductDetailPage } from '@/features/catalog/ProductDetailPage';
 import { CartPage } from '@/features/cart/CartPage';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { RegisterPage } from '@/features/auth/RegisterPage';
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +27,14 @@ export const router = createBrowserRouter([
       {
         path: 'carrito',
         element: <CartPage />,
+      },
+      {
+        path: 'cuenta/ingreso',
+        element: <LoginPage />,
+      },
+      {
+        path: 'cuenta/registro',
+        element: <RegisterPage />,
       },
       {
         path: 'nosotros',

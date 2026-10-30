@@ -1,12 +1,14 @@
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { ShoppingBag, User, Sparkles } from 'lucide-react';
+import { ShoppingBag, User, Sparkles, LogOut } from 'lucide-react';
 import { BRAND } from '@/config/brand';
 import { useCart } from '@/features/cart/CartContext';
+import { useAuth } from '@/features/auth/AuthContext';
 import './Navbar.css';
 
 export const Navbar: React.FC = () => {
   const { totalItems } = useCart();
+  const { user, logout } = useAuth();
 
   return (
     <header className="navbar">
@@ -48,14 +50,38 @@ export const Navbar: React.FC = () => {
         </nav>
 
         <div className="navbar__actions">
-          <Link
-            to="/cuenta/ingreso"
-            className="navbar__action-btn"
-            aria-label="Mi Cuenta / Iniciar Sesión"
-          >
-            <User size={20} aria-hidden="true" />
-            <span className="navbar__action-text">Cuenta</span>
-          </Link>
+          {user ? (
+            <>
+              <Link
+                to="/cuenta/ingreso"
+                className="navbar__action-btn"
+                aria-label={`Cuenta de ${user.fullName}`}
+              >
+                <User size={20} aria-hidden="true" />
+                <span className="navbar__action-text">
+                  Hola, {user.fullName.split(' ')[0]}
+                </span>
+              </Link>
+              <button
+                type="button"
+                className="navbar__action-btn"
+                onClick={logout}
+                aria-label="Cerrar sesión"
+              >
+                <LogOut size={20} aria-hidden="true" />
+                <span className="navbar__action-text">Salir</span>
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/cuenta/ingreso"
+              className="navbar__action-btn"
+              aria-label="Mi Cuenta / Iniciar Sesión"
+            >
+              <User size={20} aria-hidden="true" />
+              <span className="navbar__action-text">Cuenta</span>
+            </Link>
+          )}
           <Link
             to="/carrito"
             className="navbar__action-btn navbar__action-btn--cart"

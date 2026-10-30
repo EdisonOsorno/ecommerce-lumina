@@ -1,8 +1,11 @@
 package com.lumina.config;
 
+import com.lumina.shared.errors.EmailAlreadyExistsException;
 import com.lumina.shared.errors.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -17,6 +20,52 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Recurso no encontrado");
         problem.setType(URI.create("https://luminacosmeticos.demo/errors/not-found"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ProblemDetail handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Email ya registrado");
+        problem.setType(URI.create("https://luminacosmeticos.demo/errors/email-already-exists"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
+        // Mensaje genérico deliberado: no revelamos si el email existe o no
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, "Credenciales inválidas. Verifica tu email y contraseña."
+        );
+        problem.setTitle("No autorizado");
+        problem.setType(URI.create("https://luminacosmeticos.demo/errors/invalid-credentials"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ProblemDetail handleDisabled(DisabledException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "La cuenta está desactivada. Contacta al soporte."
+        );
+        problem.setTitle("Cuenta desactivada");
+        problem.setType(URI.create("https://luminacosmeticos.demo/errors/account-disabled"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ProblemDetail handleValidationException(org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        String detail = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .orElse("Uno o más campos de la solicitud no son válidos.");
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+        problem.setTitle("Error de validación de datos");
+        problem.setType(URI.create("https://luminacosmeticos.demo/errors/validation-error"));
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

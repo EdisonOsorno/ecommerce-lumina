@@ -4,7 +4,6 @@ import com.lumina.auth.security.JwtAuthenticationFilter;
 import com.lumina.users.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -52,8 +51,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/catalog/**", "/api/health", "/api/health/**").permitAll()
                         // Consola H2 para dev local
                         .requestMatchers("/h2-console/**").permitAll()
-                        // Escrituras transaccionales (futuras): requieren JWT. Deny by default para el resto.
-                        .requestMatchers(HttpMethod.POST, "/api/orders/**").authenticated()
+                        // Pedidos: compra como invitado permitida (POST) y consulta
+                        // pública de confirmación (GET). El filtro JWT sigue resolviendo
+                        // el user_id cuando la petición trae un Bearer token válido.
+                        .requestMatchers("/api/orders/**").permitAll()
+                        // Deny by default para el resto.
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin())) // Para H2 Console si se usa

@@ -133,11 +133,4 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(get("/api/catalog/products"))
                 .andExpect(status().isOk());
     }
-
-    @Test
-    @DisplayName("POST /api/orders - Ruta protegida rechaza petición sin token con 401 o 403")
-    void shouldRejectOrdersWithoutToken() throws Exception {
-        mockMvc.perform(post("/api/orders"))
-                .andExpect(status().isForbidden());
-    }
 }

@@ -2,9 +2,12 @@ import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { ShoppingBag, User, Sparkles } from 'lucide-react';
 import { BRAND } from '@/config/brand';
+import { useCart } from '@/features/cart/CartContext';
 import './Navbar.css';
 
 export const Navbar: React.FC = () => {
+  const { totalItems } = useCart();
+
   return (
     <header className="navbar">
       <div className="navbar__top-banner">
@@ -56,10 +59,14 @@ export const Navbar: React.FC = () => {
           <Link
             to="/carrito"
             className="navbar__action-btn navbar__action-btn--cart"
-            aria-label="Carrito de compras (0 productos)"
+            aria-label={`Carrito de compras (${totalItems} ${totalItems === 1 ? 'producto' : 'productos'})`}
           >
             <ShoppingBag size={20} aria-hidden="true" />
-            <span className="navbar__cart-badge" aria-hidden="true">0</span>
+            {totalItems > 0 && (
+              <span className="navbar__cart-badge" aria-hidden="true">
+                {totalItems > 99 ? '99+' : totalItems}
+              </span>
+            )}
           </Link>
         </div>
       </div>

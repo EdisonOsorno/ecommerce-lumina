@@ -5,6 +5,7 @@ import { ProductDetail } from '@/types/catalog';
 import { fetchProductBySlug } from '@/lib/api/catalog';
 import { formatCurrency } from '@/lib/formatting/currency';
 import { BRAND } from '@/config/brand';
+import { useCart } from '@/features/cart/CartContext';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
@@ -13,6 +14,7 @@ import './ProductDetailPage.css';
 
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { addItem } = useCart();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -53,6 +55,16 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleAddToCart = () => {
+    if (!product) return;
+    addItem({
+      productId: product.id,
+      name: product.name,
+      slug: product.slug,
+      imageUrl: product.imageUrl,
+      unitPrice: product.price,
+      quantity,
+      maxStock: product.availableStock,
+    });
     setAddedMessage(true);
     setTimeout(() => setAddedMessage(false), 4000);
   };

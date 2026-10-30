@@ -45,7 +45,7 @@ VALUES
     (SELECT id FROM categories WHERE slug = 'cuidado-capilar'),
     'Champú Sólido Fortalecedor Romero & Menta', 'champu-solido-fortalecedor-romero-menta', 'LUM-CAP-001',
     'Elaborado artesanalmente con tensioactivos suaves derivados del coco, aceite esencial de romero para estimular el cuero cabelludo y mentol refrescante.',
-    'https://images.unsplash.com/photo-1585238342024-78d387f4a707?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=600&q=80',
     29000.00, NULL, 0.1900, TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 ),
 (

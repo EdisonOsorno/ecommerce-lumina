@@ -13,16 +13,25 @@ import com.lumina.orders.dto.CreateOrderItemRequest;
 import com.lumina.orders.dto.CreateOrderRequest;
 import com.lumina.orders.dto.OrderItemResponse;
 import com.lumina.orders.dto.OrderResponse;
+import com.lumina.orders.dto.OrderSummaryResponse;
 import com.lumina.orders.repository.OrderRepository;
 import com.lumina.shared.errors.InsufficientStockException;
 import com.lumina.shared.errors.ResourceNotFoundException;
+import com.lumina.users.domain.User;
+import com.lumina.users.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -57,17 +66,20 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final InventoryItemRepository inventoryItemRepository;
     private final StockMovementRepository stockMovementRepository;
+    private final UserRepository userRepository;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
     public OrderService(OrderRepository orderRepository,
                         ProductRepository productRepository,
                         InventoryItemRepository inventoryItemRepository,
-                        StockMovementRepository stockMovementRepository) {
+                        StockMovementRepository stockMovementRepository,
+                        UserRepository userRepository) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.inventoryItemRepository = inventoryItemRepository;
         this.stockMovementRepository = stockMovementRepository;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -182,12 +194,69 @@ public class OrderService {
         return toResponse(saved);
     }
 
+    /**
+     * Consulta segura de una orden por número público.
+     *
+     * BLINDAJE IDOR: las órdenes de invitados (user_id NULL) se pueden consultar
+     * libremente (necesario para el comprobante post-checkout). Las órdenes de
+     * un usuario registrado SOLO las ve su dueño o un ROLE_ADMIN — ante cualquier
+     * otro solicitante se responde 403 vía AccessDeniedException.
+     */
     @Transactional(readOnly = true)
-    public OrderResponse getOrderByNumber(String orderNumber) {
+    public OrderResponse getOrderByNumberSecure(String orderNumber, Authentication authentication) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe un pedido con el número: " + orderNumber));
+
+        if (order.getUserId() != null) {
+            ensureOrderAccess(order.getUserId(), authentication);
+        }
+
         return toResponse(order);
+    }
+
+    /**
+     * Historial de pedidos del cliente autenticado ("Mi Cuenta"),
+     * de la más reciente a la más antigua, en formato resumen.
+     */
+    @Transactional(readOnly = true)
+    public List<OrderSummaryResponse> getMyOrders(String userEmail) {
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe un usuario con el email: " + userEmail));
+
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    /**
+     * Regla de acceso IDOR para una orden propiedad de un usuario.
+     *
+     * @param ownerId        ID del dueño de la orden
+     * @param authentication autenticación de la petición (puede ser anónima o null)
+     * @throws AccessDeniedException si no hay sesión válida o el solicitante no es
+     *                               el dueño de la orden ni un ADMIN
+     */
+    private void ensureOrderAccess(Long ownerId, Authentication authentication) {
+        boolean authenticated = authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken);
+
+        if (!authenticated) {
+            throw new AccessDeniedException("Debes iniciar sesión para ver este pedido");
+        }
+
+        User owner = userRepository.findById(ownerId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "El propietario del pedido no existe"));
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+
+        if (!owner.getEmail().equalsIgnoreCase(authentication.getName()) && !isAdmin) {
+            throw new AccessDeniedException("No tienes permiso para consultar este pedido");
+        }
     }
 
     /** Número legible: LUM-20261030-K7Q2. Reintenta ante colisión (probabilidad ínfima, SecureRandom 32 símbolos). */
@@ -210,6 +279,25 @@ public class OrderService {
             suffix.append(alphabet.charAt(secureRandom.nextInt(alphabet.length())));
         }
         return suffix.toString();
+    }
+
+    /** Convierte el wall-clock local de la entidad al instante verdadero (misma zona donde se creó). */
+    private Instant toInstant(LocalDateTime createdAt) {
+        return createdAt.atZone(ZoneId.systemDefault()).toInstant();
+    }
+
+    private OrderSummaryResponse toSummary(Order order) {
+        int itemsCount = order.getItems().stream()
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
+        return new OrderSummaryResponse(
+                order.getId(),
+                order.getOrderNumber(),
+                toInstant(order.getCreatedAt()),
+                order.getTotalAmount(),
+                order.getStatus().name(),
+                itemsCount
+        );
     }
 
     private OrderResponse toResponse(Order order) {

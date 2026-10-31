@@ -13,6 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -152,8 +153,119 @@ class OrderControllerIntegrationTest {
     }
 
     // ------------------------------------------------------------------
+    // e) Historial "Mi Cuenta": sin token se rechaza (403 entry point)
+    // ------------------------------------------------------------------
+    @Test
+    @DisplayName("GET /api/orders/my-orders - Sin token responde 403 (ruta protegida)")
+    void shouldRejectMyOrdersWithoutToken() throws Exception {
+        mockMvc.perform(get("/api/orders/my-orders"))
+                .andExpect(status().isForbidden());
+    }
+
+    // ------------------------------------------------------------------
+    // f) Historial "Mi Cuenta": con token retorna las órdenes del usuario
+    // ------------------------------------------------------------------
+    @Test
+    @DisplayName("GET /api/orders/my-orders - Con token retorna el historial del usuario con resumen")
+    void shouldReturnMyOrdersForAuthenticatedUser() throws Exception {
+        String token = registerAndReturnToken("Historial Uno", "historial.uno@example.com");
+        Long productId = productIdBySku("LUM-CAP-001");
+
+        MvcResult createResult = mockMvc.perform(post("/api/orders")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(withItems(orderRequest("Historial Uno", "historial.uno@example.com"), productId, 1))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String orderNumber = objectMapper.readTree(createResult.getResponse().getContentAsString())
+                .get("orderNumber").asText();
+
+        MvcResult historyResult = mockMvc.perform(get("/api/orders/my-orders")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", notNullValue()))
+                .andReturn();
+
+        JsonNode history = objectMapper.readTree(historyResult.getResponse().getContentAsString());
+        boolean found = false;
+        for (Iterator<JsonNode> it = history.iterator(); it.hasNext(); ) {
+            JsonNode summary = it.next();
+            if (orderNumber.equals(summary.get("orderNumber").asText())
+                    && summary.has("createdAt")
+                    && summary.get("itemsCount").asInt() >= 1
+                    && summary.has("totalAmount")
+                    && summary.has("status")) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue(found, "La orden creada debe aparecer en el historial del usuario");
+    }
+
+    // ------------------------------------------------------------------
+    // g) Blindaje IDOR: el dueño ve su orden (200); otro usuario autenticado
+    //    que intente verla recibe 403 Forbidden
+    // ------------------------------------------------------------------
+    @Test
+    @DisplayName("GET /api/orders/{orderNumber} - IDOR: dueño OK (200), otro usuario autenticado 403")
+    void shouldEnforceOwnerOnlyAccessOnUserOrders() throws Exception {
+        String ownerToken = registerAndReturnToken("Owner Público", "idor.owner@example.com");
+        String attackerToken = registerAndReturnToken("Atacante Api", "idor.attacker@example.com");
+        Long productId = productIdBySku("LUM-CAP-002");
+
+        MvcResult createResult = mockMvc.perform(post("/api/orders")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(withItems(orderRequest("Owner Público", "idor.owner@example.com"), productId, 1))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String orderNumber = objectMapper.readTree(createResult.getResponse().getContentAsString())
+                .get("orderNumber").asText();
+
+        // El dueño SÍ puede ver su propia orden
+        mockMvc.perform(get("/api/orders/{orderNumber}", orderNumber)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderNumber", is(orderNumber)));
+
+        // Otro usuario autenticado NO puede ver la orden del dueño → 403
+        mockMvc.perform(get("/api/orders/{orderNumber}", orderNumber)
+                        .header("Authorization", "Bearer " + attackerToken))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title", is("Acceso denegado")))
+                .andExpect(jsonPath("$.detail", is("No tienes permiso para consultar este pedido")));
+
+        // La misma orden sigue siendo visible sin sesión solo si fuera de invitado;
+        // aquí es de usuario: sin token también debe ser 403
+        mockMvc.perform(get("/api/orders/{orderNumber}", orderNumber))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail", is("Debes iniciar sesión para ver este pedido")));
+    }
+
+    // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------
+
+    /** Registra un usuario de prueba y retorna su token JWT. */
+    private String registerAndReturnToken(String fullName, String email) throws Exception {
+        Map<String, Object> registerRequest = Map.of(
+                "fullName", fullName,
+                "email", email,
+                "password", "ContrasenaFuerte2026",
+                "phone", "+573000000000"
+        );
+
+        MvcResult registerResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(registerResult.getResponse().getContentAsString());
+        return body.get("token").asText();
+    }
 
     /** Resuelve el ID real del producto del seed por SKU (busca en el catálogo cargado). */
     private Long productIdBySku(String sku) {

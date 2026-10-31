@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -17,4 +18,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /** Existencia de número público (para generar números únicos sin traer la orden). */
     boolean existsByOrderNumber(String orderNumber);
+
+    /** Historial de órdenes de un usuario, de la más reciente a la más antigua. */
+    List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

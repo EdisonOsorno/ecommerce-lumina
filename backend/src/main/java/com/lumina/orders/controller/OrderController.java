@@ -2,6 +2,7 @@ package com.lumina.orders.controller;
 
 import com.lumina.orders.dto.CreateOrderRequest;
 import com.lumina.orders.dto.OrderResponse;
+import com.lumina.orders.dto.OrderSummaryResponse;
 import com.lumina.orders.service.OrderService;
 import com.lumina.users.domain.User;
 import com.lumina.users.repository.UserRepository;
@@ -17,10 +18,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * API de órdenes. POST permite compra como invitado: si hay Bearer token y es
  * válido, el filtro JWT ya cargó la Authentication y se asigna el user_id;
  * de lo contrario la orden se registra como invitado (user_id NULL).
+ *
+ * El blindaje IDOR del detalle vive en OrderService.getOrderByNumberSecure.
  */
 @RestController
 @RequestMapping("/api/orders")
@@ -42,10 +47,17 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /** Público para revisar la confirmación del pedido por su número. */
+    /** Historial "Mi Cuenta": requiere sesión (reforzada en SecurityConfig antes que las rutas públicas). */
+    @GetMapping("/my-orders")
+    public ResponseEntity<List<OrderSummaryResponse>> getMyOrders(Authentication authentication) {
+        return ResponseEntity.ok(orderService.getMyOrders(authentication.getName()));
+    }
+
+    /** Consulta pública para invitados; con sesión activa aplica la regla IDOR de dueño/ADMIN. */
     @GetMapping("/{orderNumber}")
-    public ResponseEntity<OrderResponse> getByOrderNumber(@PathVariable String orderNumber) {
-        return ResponseEntity.ok(orderService.getOrderByNumber(orderNumber));
+    public ResponseEntity<OrderResponse> getByOrderNumber(@PathVariable String orderNumber,
+                                                          Authentication authentication) {
+        return ResponseEntity.ok(orderService.getOrderByNumberSecure(orderNumber, authentication));
     }
 
     /** Traduce el principal (email del JWT) al ID de la tabla users; null si es invitado. */

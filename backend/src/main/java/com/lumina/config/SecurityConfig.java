@@ -4,6 +4,7 @@ import com.lumina.auth.security.JwtAuthenticationFilter;
 import com.lumina.users.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -51,9 +52,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/catalog/**", "/api/health", "/api/health/**").permitAll()
                         // Consola H2 para dev local
                         .requestMatchers("/h2-console/**").permitAll()
-                        // Pedidos: compra como invitado permitida (POST) y consulta
-                        // pública de confirmación (GET). El filtro JWT sigue resolviendo
-                        // el user_id cuando la petición trae un Bearer token válido.
+                        // Pedidos: el historial propio exige sesión (regla más específica,
+                        // evaluada ANTES del permitAll de la ruta general). La compra como
+                        // invitado (POST) y la consulta por número (GET, con regla IDOR en
+                        // el servicio) siguen abiertas.
+                        .requestMatchers(HttpMethod.GET, "/api/orders/my-orders").authenticated()
                         .requestMatchers("/api/orders/**").permitAll()
                         // Deny by default para el resto.
                         .anyRequest().authenticated()

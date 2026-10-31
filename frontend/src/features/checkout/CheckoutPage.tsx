@@ -39,9 +39,13 @@ export const CheckoutPage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Marca que el pedido ya se registró con éxito: evita que la guarda de carrito
+  // vacío (que redirige a /carrito) se dispare al vaciar la bolsa en el submit.
+  const [orderSuccess, setOrderSuccess] = useState(false);
 
-  // Regla de oro: entrar a /checkout sin productos redirige a /carrito
-  if (state.items.length === 0) {
+  // Regla de oro: entrar a /checkout sin productos redirige a /carrito.
+  // No aplica si el pedido ya se completó (la bolsa acaba de vaciarse legítimamente).
+  if (state.items.length === 0 && !orderSuccess) {
     return <Navigate to="/carrito" replace />;
   }
 
@@ -83,6 +87,10 @@ export const CheckoutPage: React.FC = () => {
     setError(null);
     try {
       const order = await createOrder(request, token);
+      // Marco la compra como completada ANTES del clearCart(): en la
+      // re-renderización intermedia la guarda no debe redirigir a /carrito
+      // ni abortar la navegación hacia el comprobante.
+      setOrderSuccess(true);
       // La compra ya está reservada: vaciar la bolsa y mostrar el comprobante
       clearCart();
       navigate(`/pedido/confirmacion/${encodeURIComponent(order.orderNumber)}`, { replace: true });

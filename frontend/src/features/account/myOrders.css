@@ -1,0 +1,148 @@
+/* ====================================================================
+ * Mis Pedidos (/cuenta/pedidos) — tokens de diseño de tokens.css
+ * ==================================================================== */
+
+.my-orders-page {
+  padding: var(--space-10) 0;
+}
+
+.my-orders-page__header {
+  margin-bottom: var(--space-8);
+}
+
+.my-orders-page__title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
+}
+
+.my-orders-page__subtitle {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.my-orders-loading {
+  padding: var(--space-12) 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Estado vacío ---------- */
+
+.my-orders-empty {
+  text-align: center;
+  padding: var(--space-12) var(--space-4);
+  background-color: var(--color-bg-surface);
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-lg);
+}
+
+.my-orders-empty__icon {
+  color: var(--color-brand-accent);
+  margin-bottom: var(--space-4);
+}
+
+.my-orders-empty__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-main);
+}
+
+.my-orders-empty__text {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.my-orders-empty__actions {
+  margin-top: var(--space-6);
+}
+
+/* ---------- Listado ---------- */
+
+.my-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.my-order-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5) var(--space-6);
+  transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+
+.my-order-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-default);
+}
+
+.my-order-card__info {
+  min-width: 0;
+}
+
+.my-order-card__number {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+}
+
+.my-order-card__date {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.my-order-card__status {
+  margin-top: var(--space-2);
+}
+
+.my-order-card__summary {
+  margin-left: auto;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.my-order-card__total {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-main);
+}
+
+.my-order-card__units {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.my-order-card__action {
+  flex-shrink: 0;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  .my-order-card {
+    flex-wrap: wrap;
+  }
+  .my-order-card__summary {
+    margin-left: 0;
+    text-align: left;
+    width: 100%;
+  }
+  .my-order-card__action {
+    width: 100%;
+  }
+  .my-order-card__action button {
+    width: 100%;
+  }
+}

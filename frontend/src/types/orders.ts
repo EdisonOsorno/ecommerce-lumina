@@ -60,3 +60,18 @@ export interface OrderResponse {
   createdAt: string;
   items: OrderItemResponse[];
 }
+
+/**
+ * Resumen compacto de una orden para el historial "Mis Pedidos" (Mi Cuenta).
+ * Espejo del DTO OrderSummaryResponse del backend (no incluye items ni datos personales).
+ */
+export interface OrderSummary {
+  id: number;
+  orderNumber: string;
+  /** ISO Instant (se convierte a local al mostrar) */
+  createdAt: string;
+  totalAmount: number;
+  status: string; // 'PENDING_PAYMENT' | 'PAID' | 'CANCELLED'
+  /** Suma de cantidades de los items (unidades totales del pedido) */
+  itemsCount: number;
+}

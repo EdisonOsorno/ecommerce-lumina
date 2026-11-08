@@ -8,6 +8,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { CheckoutPage } from '@/features/checkout/CheckoutPage';
 import { OrderConfirmationPage } from '@/features/checkout/OrderConfirmationPage';
+import { MyOrdersPage } from '@/features/account/MyOrdersPage';
 
 export const router = createBrowserRouter([
   {
@@ -45,6 +46,10 @@ export const router = createBrowserRouter([
       {
         path: 'pedido/confirmacion/:orderNumber',
         element: <OrderConfirmationPage />,
+      },
+      {
+        path: 'cuenta/pedidos',
+        element: <MyOrdersPage />,
       },
       {
         path: 'nosotros',

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CheckCircle2, Mail, Printer } from 'lucide-react';
 import { getOrderByNumber } from '@/lib/api/orders';
+import { useAuth } from '@/features/auth/AuthContext';
 import { formatCurrency } from '@/lib/formatting/currency';
 import type { OrderResponse } from '@/types/orders';
 import { Button } from '@/components/ui/Button';
@@ -29,6 +30,7 @@ function statusBadge(status: string): { label: string; variant: 'success' | 'war
  */
 export const OrderConfirmationPage: React.FC = () => {
   const { orderNumber } = useParams<{ orderNumber: string }>();
+  const { token } = useAuth();
   const [order, setOrder] = useState<OrderResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,9 @@ export const OrderConfirmationPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    getOrderByNumber(orderNumber)
+    // Token opcional: si el comprador estaba autenticado, el blindaje IDOR del
+    // backend exige su Bearer token; para órdenes de invitado no hace falta.
+    getOrderByNumber(orderNumber, token)
       .then((data) => {
         if (!cancelled) setOrder(data);
       })
@@ -60,7 +64,7 @@ export const OrderConfirmationPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [orderNumber]);
+  }, [orderNumber, token]);
 
   if (isLoading) {
     return (

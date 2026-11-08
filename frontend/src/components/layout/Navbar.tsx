@@ -53,9 +53,9 @@ export const Navbar: React.FC = () => {
           {user ? (
             <>
               <Link
-                to="/cuenta/ingreso"
+                to="/cuenta/pedidos"
                 className="navbar__action-btn"
-                aria-label={`Cuenta de ${user.fullName}`}
+                aria-label="Mis Pedidos"
               >
                 <User size={20} aria-hidden="true" />
                 <span className="navbar__action-text">

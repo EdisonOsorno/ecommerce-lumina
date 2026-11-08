@@ -2,7 +2,10 @@ import { extractProblemDetailMessage } from '@/lib/api/problemDetail';
 import type {
   AdminInventoryItem,
   AdminOrderSummary,
+  AdminProduct,
+  CreateProductPayload,
   InventoryAdjustPayload,
+  UpdateProductPayload,
 } from '@/types/admin';
 import type { OrderResponse } from '@/types/orders';
 
@@ -14,7 +17,7 @@ const API_BASE_URL = '/api/admin';
  * inexistente) vía Problem Detail; extraemos el detail amigable al fallar.
  */
 async function adminRequest<T>(
-  method: 'GET' | 'PATCH' | 'POST',
+  method: 'GET' | 'PATCH' | 'POST' | 'PUT',
   url: string,
   token: string,
   body?: unknown,
@@ -95,5 +98,65 @@ export function adjustAdminInventory(
     token,
     payload,
     'No fue posible aplicar el ajuste de inventario.'
+  );
+}
+
+/**
+ * Listado admin de TODOS los productos (activos e inactivos),
+ * de más nuevo a más antiguo, con su stock disponible.
+ */
+export function getAdminProducts(token: string): Promise<AdminProduct[]> {
+  return adminRequest<AdminProduct[]>(
+    'GET',
+    `${API_BASE_URL}/products`,
+    token,
+    undefined,
+    'No fue posible cargar los productos del catálogo.'
+  );
+}
+
+/**
+ * Crea un producto: el backend genera el slug desde el nombre, crea el
+ * inventario inicial y registra el movimiento de stock cuando trae unidades.
+ */
+export function createAdminProduct(
+  token: string,
+  payload: CreateProductPayload
+): Promise<AdminProduct> {
+  return adminRequest<AdminProduct>(
+    'POST',
+    `${API_BASE_URL}/products`,
+    token,
+    payload,
+    'No fue posible crear el producto.'
+  );
+}
+
+/** Edita los datos comerciales (SKU y slug no cambian; vatRate nulo conserva el vigente). */
+export function updateAdminProduct(
+  token: string,
+  id: number,
+  payload: UpdateProductPayload
+): Promise<AdminProduct> {
+  return adminRequest<AdminProduct>(
+    'PUT',
+    `${API_BASE_URL}/products/${id}`,
+    token,
+    payload,
+    'No fue posible actualizar el producto.'
+  );
+}
+
+/** Soft delete (INVIMA/descontinuación): invierte is_active sin borrado físico. */
+export function toggleAdminProductStatus(
+  token: string,
+  id: number
+): Promise<AdminProduct> {
+  return adminRequest<AdminProduct>(
+    'PATCH',
+    `${API_BASE_URL}/products/${id}/toggle-status`,
+    token,
+    undefined,
+    'No fue posible cambiar el estado del producto.'
   );
 }

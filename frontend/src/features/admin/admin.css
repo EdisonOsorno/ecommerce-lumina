@@ -256,3 +256,87 @@
     padding: var(--space-5);
   }
 }
+
+/* ---------- Pestaña Productos (Fase 5C) ---------- */
+
+.admin-products-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.admin-products-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.admin-product-thumb {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  background-color: var(--color-bg-subtle);
+}
+
+.admin-cell__sku {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.admin-products-list .admin-table {
+  min-width: 920px;
+}
+
+/* Interruptor de estado (Activo / Inactivo — soft delete) */
+
+.admin-status-toggle {
+  border: none;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-inverse);
+  white-space: nowrap;
+  transition: opacity var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.admin-status-toggle--active {
+  background-color: var(--color-success);
+}
+
+.admin-status-toggle--inactive {
+  background-color: var(--color-text-muted);
+}
+
+.admin-status-toggle:hover {
+  box-shadow: 0 0 0 2px var(--color-brand-accent-light);
+}
+
+.admin-status-toggle:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* Formulario del modal de producto */
+
+.admin-field textarea.admin-input {
+  resize: vertical;
+  min-height: 72px;
+}
+
+@media (max-width: 640px) {
+  .admin-products-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-products-header button {
+    width: 100%;
+  }
+}

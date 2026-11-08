@@ -44,3 +44,47 @@ export interface InventoryAdjustPayload {
   quantityDelta: number;
   reason: string;
 }
+
+/** Producto completo visto desde el backoffice (AdminProductResponse). */
+export interface AdminProduct {
+  id: number;
+  name: string;
+  slug: string;
+  sku: string;
+  categoryId: number;
+  categoryName: string;
+  price: number;
+  compareAtPrice?: number;
+  vatRate: number;
+  imageUrl?: string;
+  /** Soft delete: false = oculto del catálogo público (INVIMA/descontinuación) */
+  active: boolean;
+  featured: boolean;
+  availableQuantity: number;
+  /** ISO Instant */
+  createdAt: string;
+}
+
+/** Cuerpo del POST /api/admin/products (CreateProductRequest). El slug lo genera el backend. */
+export interface CreateProductPayload {
+  name: string;
+  sku: string;
+  categoryId: number;
+  description?: string;
+  imageUrl?: string;
+  price: number;
+  compareAtPrice?: number;
+  vatRate?: number;
+  initialStock: number;
+}
+
+/** Cuerpo del PUT /api/admin/products/{id} (UpdateProductRequest). SKU y slug no cambian. */
+export interface UpdateProductPayload {
+  name: string;
+  categoryId: number;
+  description?: string;
+  imageUrl?: string;
+  price: number;
+  compareAtPrice?: number;
+  vatRate?: number;
+}

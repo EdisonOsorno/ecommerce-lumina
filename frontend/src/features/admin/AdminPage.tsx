@@ -4,23 +4,34 @@ import {
   ArrowRight,
   Boxes,
   ClipboardList,
+  Package,
   PackageMinus,
+  Pencil,
+  Plus,
   ShoppingCart,
   ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   adjustAdminInventory,
+  createAdminProduct,
   getAdminInventory,
   getAdminOrders,
+  getAdminProducts,
+  toggleAdminProductStatus,
   updateAdminOrderStatus,
+  updateAdminProduct,
 } from '@/lib/api/admin';
+import { fetchCategories } from '@/lib/api/catalog';
+import { BRAND } from '@/config/brand';
 import { formatCurrency } from '@/lib/formatting/currency';
 import type {
   AdminInventoryItem,
   AdminOrderStatus,
   AdminOrderSummary,
+  AdminProduct,
 } from '@/types/admin';
+import type { Category } from '@/types/catalog';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
@@ -32,7 +43,9 @@ interface AdminFeedback {
 }
 
 type OrdersTabFilter = 'ALL' | AdminOrderStatus;
-type ActiveTab = 'orders' | 'inventory';
+type ActiveTab = 'orders' | 'inventory' | 'products';
+/** Modal de producto: creación o edición con el producto pre-cargado. */
+type ProductModal = { mode: 'create' } | { mode: 'edit'; product: AdminProduct } | null;
 
 /** Etiquetas legibles para el selector y los badges de estado del pedido. */
 const ORDER_STATUS_LABELS: Record<AdminOrderStatus, string> = {
@@ -85,6 +98,14 @@ function formatDate(isoDate: string): string {
   });
 }
 
+/** Convierte un campo de monto/stock a número; NaN si no es parseable. */
+function parseNumericField(raw: string): number {
+  if (raw.trim() === '') {
+    return Number.NaN;
+  }
+  return Number(raw.replace(',', '.'));
+}
+
 /** Estilo para ocultar visualmente el caption de la tabla (accesible). */
 const srOnlyStyle: React.CSSProperties = {
   position: 'absolute',
@@ -100,8 +121,8 @@ const srOnlyStyle: React.CSSProperties = {
 
 /**
  * Panel de administración del backoffice (/admin), exclusivo de ROLE_ADMIN.
- * El backend protege /api/admin/** con hasRole("ADMIN"); este guard frontal
- * solo decide presentación (lo sensible nunca depende del frontend).
+ * Pestañas: Pedidos (estados), Inventario (ajustes) y Productos (CRUD
+ * comercial con soft delete por INVIMA/descontinuación — nunca DELETE físico).
  */
 export const AdminPage: React.FC = () => {
   const { token, user, isAuthenticated } = useAuth();
@@ -123,6 +144,16 @@ export const AdminPage: React.FC = () => {
   const [adjustDelta, setAdjustDelta] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
   const [adjustSubmitting, setAdjustSubmitting] = useState(false);
+
+  // Productos (Fase 5C): listado + categorías del selector + modales
+  const [products, setProducts] = useState<AdminProduct[] | null>(null);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[] | null>(null);
+  const [togglingProductId, setTogglingProductId] = useState<number | null>(null);
+  const [productModal, setProductModal] = useState<ProductModal>(null);
+  const [productSubmitting, setProductSubmitting] = useState(false);
+  const [productModalError, setProductModalError] = useState<string | null>(null);
 
   const [feedback, setFeedback] = useState<AdminFeedback | null>(null);
 
@@ -183,6 +214,55 @@ export const AdminPage: React.FC = () => {
         if (!cancelled) setInventoryLoading(false);
       });
 
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Carga de productos del catálogo (activos e inactivos)
+  useEffect(() => {
+    if (!token) {
+      setProductsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setProductsLoading(true);
+    setProductsError(null);
+
+    getAdminProducts(token)
+      .then((data) => {
+        if (!cancelled) setProducts(data);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setProductsError(
+            err instanceof Error ? err.message : 'Error inesperado al cargar los productos.'
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setProductsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Categorías para el selector de los modales de producto
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+    let cancelled = false;
+    fetchCategories()
+      .then((data) => {
+        if (!cancelled) setCategories(data);
+      })
+      .catch(() => {
+        // El selector queda vacío; no rompe el flujo de gestión de productos
+        if (!cancelled) setCategories(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -303,6 +383,199 @@ export const AdminPage: React.FC = () => {
     [token, adjustTarget, isAdjustValid, adjustSubmitting, parsedDelta, adjustReason, closeAdjustModal]
   );
 
+  // ================= Productos (Fase 5C) =================
+
+  // Campos del formulario del modal de producto (strings = inputs sin control)
+  const [formName, setFormName] = useState('');
+  const [formSku, setFormSku] = useState('');
+  const [formCategoryId, setFormCategoryId] = useState('');
+  const [formPrice, setFormPrice] = useState('');
+  const [formCompareAtPrice, setFormCompareAtPrice] = useState('');
+  const [formImageUrl, setFormImageUrl] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formInitialStock, setFormInitialStock] = useState('');
+
+  const openCreateProductModal = useCallback(() => {
+    setFormName('');
+    setFormSku('');
+    setFormCategoryId('');
+    setFormPrice('');
+    setFormCompareAtPrice('');
+    setFormImageUrl('');
+    setFormDescription('');
+    setFormInitialStock('');
+    setProductModalError(null);
+    setProductModal({ mode: 'create' });
+  }, []);
+
+  const openEditProductModal = useCallback((product: AdminProduct) => {
+    setFormName(product.name);
+    setFormCategoryId(String(product.categoryId));
+    setFormPrice(String(product.price));
+    setFormCompareAtPrice(product.compareAtPrice != null ? String(product.compareAtPrice) : '');
+    setFormImageUrl(product.imageUrl ?? '');
+    setFormDescription('');
+    setProductModalError(null);
+    // description no viene en AdminProductResponse (DTO del backend); en edición
+    // se envía la que el admin escriba aquí o se limpia si deja vacío
+    setProductModal({ mode: 'edit', product });
+  }, []);
+
+  const closeProductModal = useCallback(() => {
+    setProductModal(null);
+    setProductModalError(null);
+  }, []);
+
+  const parsedFormPrice = parseNumericField(formPrice);
+  const parsedFormCompareAt = parseNumericField(formCompareAtPrice);
+  const isPriceValid = Number.isFinite(parsedFormPrice) && parsedFormPrice >= 0;
+  const isCompareAtValid =
+    formCompareAtPrice.trim() === '' ||
+    (Number.isFinite(parsedFormCompareAt) && parsedFormCompareAt >= 0);
+  const parsedInitialStock = Number.isInteger(parseNumericField(formInitialStock))
+    ? parseNumericField(formInitialStock)
+    : Number.NaN;
+  const isInitialStockValid =
+    formInitialStock.trim() === '' ||
+    (Number.isFinite(parsedInitialStock) && parsedInitialStock >= 0);
+
+  // Validación en vivo: el submit se inhabilita si falta un campo obligatorio
+  const isProductFormValid =
+    formName.trim().length > 0 &&
+    productModal !== null &&
+    (productModal.mode === 'create' ? formSku.trim().length > 0 : true) &&
+    formCategoryId !== '' &&
+    isPriceValid &&
+    isCompareAtValid &&
+    (productModal.mode === 'create' ? isInitialStockValid : true);
+
+  // Crear o editar producto desde el modal; atualiza la tabla en vivo
+  const handleProductSubmit = useCallback(
+    (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!token || productModal === null || !isProductFormValid || productSubmitting) {
+        return;
+      }
+
+      const basePayload = {
+        name: formName.trim(),
+        categoryId: Number(formCategoryId),
+        price: parsedFormPrice,
+        compareAtPrice:
+          formCompareAtPrice.trim() === '' ? undefined : parsedFormCompareAt,
+        imageUrl: formImageUrl.trim() === '' ? undefined : formImageUrl.trim(),
+        description: formDescription.trim() === '' ? undefined : formDescription.trim(),
+      };
+
+      setProductSubmitting(true);
+      setProductModalError(null);
+      setFeedback(null);
+
+      if (productModal.mode === 'create') {
+        const payload = {
+          ...basePayload,
+          sku: formSku.trim(),
+          initialStock: Number.isFinite(parsedInitialStock) ? parsedInitialStock : 0,
+        };
+        createAdminProduct(token, payload)
+          .then((created) => {
+            // El producto más nuevo encabeza la tabla (mismo orden id DESC del backend)
+            setProducts((prev) => [created, ...(prev ?? [])]);
+            setFeedback({
+              type: 'success',
+              message: `Producto "${created.name}" creado con ${created.availableQuantity} unidades en inventario.`,
+            });
+            closeProductModal();
+          })
+          .catch((err: unknown) => {
+            // El modal queda abierto para corregir (ej. SKU duplicado → 409)
+            setProductModalError(
+              err instanceof Error ? err.message : 'Error inesperado al crear el producto.'
+            );
+          })
+          .finally(() => {
+            setProductSubmitting(false);
+          });
+      } else {
+        const payload = { ...basePayload };
+        updateAdminProduct(token, productModal.product.id, payload)
+          .then((updated) => {
+            setProducts((prev) =>
+              prev?.map((product) =>
+                product.id === updated.id ? updated : product
+              ) ?? prev
+            );
+            setFeedback({
+              type: 'success',
+              message: `Producto "${updated.name}" actualizado correctamente.`,
+            });
+            closeProductModal();
+          })
+          .catch((err: unknown) => {
+            setProductModalError(
+              err instanceof Error ? err.message : 'Error inesperado al actualizar el producto.'
+            );
+          })
+          .finally(() => {
+            setProductSubmitting(false);
+          });
+      }
+    },
+    [
+      token,
+      productModal,
+      isProductFormValid,
+      productSubmitting,
+      formName,
+      formSku,
+      formCategoryId,
+      parsedFormPrice,
+      formCompareAtPrice,
+      parsedFormCompareAt,
+      formImageUrl,
+      formDescription,
+      parsedInitialStock,
+      closeProductModal,
+    ]
+  );
+
+  // Soft delete en vivo (INVIMA/descontinuación): invierte is_active
+  const handleToggleProduct = useCallback(
+    (product: AdminProduct) => {
+      if (!token) {
+        return;
+      }
+      setTogglingProductId(product.id);
+      setFeedback(null);
+      setProductsError(null);
+
+      toggleAdminProductStatus(token, product.id)
+        .then((updated) => {
+          setProducts((prev) =>
+            prev?.map((item) => (item.id === updated.id ? updated : item)) ?? prev
+          );
+          setFeedback({
+            type: 'success',
+            message: updated.active
+              ? `Producto "${updated.name}" reactivado (visible en el catálogo público).`
+              : `Producto "${updated.name}" desactivado (oculto del catálogo público por INVIMA/descontinuación).`,
+          });
+        })
+        .catch((err: unknown) => {
+          setProductsError(
+            err instanceof Error
+              ? err.message
+              : 'Error inesperado al cambiar el estado del producto.'
+          );
+          setFeedback(null);
+        })
+        .finally(() => {
+          setTogglingProductId(null);
+        });
+    },
+    [token]
+  );
+
   // Guard de ruta: solo ROLE_ADMIN entra al backoffice
   if (!isAdmin) {
     return <Navigate to="/cuenta/ingreso" replace />;
@@ -316,7 +589,7 @@ export const AdminPage: React.FC = () => {
           <h1 className="admin-title">Panel de Administración</h1>
         </div>
         <p className="admin-subtitle">
-          Gestión de pedidos, estados del ciclo de vida y control de inventario de la tienda.
+          Gestión de pedidos, estados del ciclo de vida e inventario y productos de la tienda.
         </p>
       </header>
 
@@ -338,7 +611,7 @@ export const AdminPage: React.FC = () => {
           onClick={() => setActiveTab('orders')}
         >
           <ClipboardList size={18} aria-hidden="true" />
-          Gestión de Pedidos
+          Pedidos
         </button>
         <button
           type="button"
@@ -348,7 +621,17 @@ export const AdminPage: React.FC = () => {
           onClick={() => setActiveTab('inventory')}
         >
           <Boxes size={18} aria-hidden="true" />
-          Control de Inventario
+          Inventario
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'products'}
+          className={`admin-tab ${activeTab === 'products' ? 'admin-tab--active' : ''}`}
+          onClick={() => setActiveTab('products')}
+        >
+          <Package size={18} aria-hidden="true" />
+          Productos
         </button>
       </div>
 
@@ -518,6 +801,111 @@ export const AdminPage: React.FC = () => {
         </section>
       )}
 
+      {/* ================= Pestaña 3: Gestión de Productos (Fase 5C) ================= */}
+      {activeTab === 'products' && (
+        <section aria-label="Gestión de productos">
+          <div className="admin-products-header">
+            <p className="admin-products-count">
+              {products ? `${products.length} productos registrados (activos e inactivos)` : ''}
+            </p>
+            <Button
+              variant="primary"
+              leftIcon={<Plus size={16} />}
+              onClick={openCreateProductModal}
+            >
+              + Nuevo Producto
+            </Button>
+          </div>
+
+          {productsError && (
+            <Alert
+              variant="error"
+              title="No pudimos cargar los productos"
+              style={{ marginBottom: 'var(--space-5)' }}
+            >
+              {productsError}
+            </Alert>
+          )}
+
+          {productsLoading ? (
+            <p role="status" aria-live="polite">
+              Cargando productos...
+            </p>
+          ) : products && products.length === 0 ? (
+            <div className="admin-table-wrap">
+              <p className="admin-empty">No hay productos en el catálogo todavía.</p>
+            </div>
+          ) : products && products.length > 0 ? (
+            <div className="admin-table-wrap admin-products-list">
+              <table className="admin-table">
+                <caption style={srOnlyStyle}>Productos del catálogo</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" aria-label="Foto" />
+                    <th scope="col">Producto</th>
+                    <th scope="col">Categoría</th>
+                    <th scope="col" className="admin-cell--num">Precio</th>
+                    <th scope="col" className="admin-cell--num">Stock Disponible</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" aria-label="Acciones" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((product) => (
+                    <tr key={product.id}>
+                      <td>
+                        <img
+                          src={product.imageUrl || BRAND.defaultProductImage}
+                          alt={`Foto de ${product.name}`}
+                          className="admin-product-thumb"
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.src = BRAND.defaultProductImage;
+                          }}
+                        />
+                      </td>
+                      <td>
+                        {product.name}
+                        <div className="admin-cell__sku">{product.sku}</div>
+                      </td>
+                      <td>{product.categoryName}</td>
+                      <td className="admin-cell--num">{formatCurrency(product.price)}</td>
+                      <td className="admin-cell--num">{product.availableQuantity}</td>
+                      <td>
+                        {/* Soft delete en vivo: invierte is_active (nunca hay borrado físico) */}
+                        <button
+                          type="button"
+                          className={`admin-status-toggle ${product.active ? 'admin-status-toggle--active' : 'admin-status-toggle--inactive'}`}
+                          disabled={togglingProductId !== null}
+                          onClick={() => handleToggleProduct(product)}
+                          aria-label={
+                            product.active
+                              ? `Desactivar ${product.name} (ocultar del catálogo público)`
+                              : `Reactivar ${product.name} en el catálogo público`
+                          }
+                        >
+                          {product.active ? 'Activo' : 'Inactivo'}
+                        </button>
+                      </td>
+                      <td>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<Pencil size={14} />}
+                          onClick={() => openEditProductModal(product)}
+                        >
+                          Editar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </section>
+      )}
+
       {/* ================= Modal de ajuste de inventario ================= */}
       {adjustTarget && (
         <div
@@ -587,6 +975,175 @@ export const AdminPage: React.FC = () => {
                   leftIcon={<ShoppingCart size={16} />}
                 >
                   Aplicar Ajuste
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= Modal de producto: crear / editar (Fase 5C) ================= */}
+      {productModal && (
+        <div
+          className="admin-modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeProductModal();
+            }
+          }}
+        >
+          <div
+            className="admin-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-modal-title"
+          >
+            <h2 id="product-modal-title" className="admin-modal__title">
+              {productModal.mode === 'create' ? 'Nuevo Producto' : 'Editar Producto'}
+            </h2>
+            <p className="admin-modal__subtitle">
+              {productModal.mode === 'create'
+                ? 'El backend generará el slug desde el nombre y creará el inventario inicial.'
+                : `SKU ${productModal.product.sku} · El slug y el SKU no son editables.`}
+            </p>
+
+            {productModalError && (
+              <Alert variant="error" style={{ marginTop: 'var(--space-4)' }}>
+                {productModalError}
+              </Alert>
+            )}
+
+            <form onSubmit={handleProductSubmit}>
+              <div className="admin-field">
+                <label htmlFor="product-name">Nombre *</label>
+                <input
+                  id="product-name"
+                  className="admin-input"
+                  type="text"
+                  maxLength={150}
+                  placeholder="Ej.: Sérum Facial Rosa Mosqueta"
+                  value={formName}
+                  onChange={(event) => setFormName(event.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              {productModal.mode === 'create' && (
+                <div className="admin-field">
+                  <label htmlFor="product-sku">SKU *</label>
+                  <input
+                    id="product-sku"
+                    className="admin-input"
+                    type="text"
+                    maxLength={50}
+                    placeholder="Ej.: LUM-FAC-NEW"
+                    value={formSku}
+                    onChange={(event) => setFormSku(event.target.value)}
+                  />
+                  <p className="admin-hint">Debe ser único; el backend responde 409 si ya existe.</p>
+                </div>
+              )}
+
+              <div className="admin-field">
+                <label htmlFor="product-category">Categoría *</label>
+                <select
+                  id="product-category"
+                  className="admin-input"
+                  value={formCategoryId}
+                  onChange={(event) => setFormCategoryId(event.target.value)}
+                >
+                  <option value="">Selecciona una categoría</option>
+                  {(categories ?? []).map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="product-price">Precio (COP) *</label>
+                <input
+                  id="product-price"
+                  className="admin-input"
+                  type="number"
+                  step="100"
+                  min="0"
+                  placeholder="Ej.: 49900"
+                  value={formPrice}
+                  onChange={(event) => setFormPrice(event.target.value)}
+                />
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="product-compare">Precio de comparación (opcional)</label>
+                <input
+                  id="product-compare"
+                  className="admin-input"
+                  type="number"
+                  step="100"
+                  min="0"
+                  placeholder="Ej.: 62000 (mayor o igual al precio)"
+                  value={formCompareAtPrice}
+                  onChange={(event) => setFormCompareAtPrice(event.target.value)}
+                />
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="product-image">URL de imagen (opcional)</label>
+                <input
+                  id="product-image"
+                  className="admin-input"
+                  type="text"
+                  placeholder="https://..."
+                  value={formImageUrl}
+                  onChange={(event) => setFormImageUrl(event.target.value)}
+                />
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="product-description">Descripción (opcional)</label>
+                <textarea
+                  id="product-description"
+                  className="admin-input"
+                  placeholder="Descripción comercial del producto"
+                  value={formDescription}
+                  onChange={(event) => setFormDescription(event.target.value)}
+                  maxLength={2000}
+                />
+              </div>
+
+              {productModal.mode === 'create' && (
+                <div className="admin-field">
+                  <label htmlFor="product-stock">Stock inicial</label>
+                  <input
+                    id="product-stock"
+                    className="admin-input"
+                    type="number"
+                    step="1"
+                    min="0"
+                    placeholder="Ej.: 10 (0 si es solo catálogo)"
+                    value={formInitialStock}
+                    onChange={(event) => setFormInitialStock(event.target.value)}
+                  />
+                  <p className="admin-hint">
+                    Se creará una fila de inventario; si es &gt; 0 el movimiento queda auditado.
+                  </p>
+                </div>
+              )}
+
+              <div className="admin-modal__actions">
+                <Button variant="ghost" onClick={closeProductModal} type="button">
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  isLoading={productSubmitting}
+                  disabled={!isProductFormValid}
+                  leftIcon={<Plus size={16} />}
+                >
+                  {productModal.mode === 'create' ? 'Crear Producto' : 'Guardar Cambios'}
                 </Button>
               </div>
             </form>

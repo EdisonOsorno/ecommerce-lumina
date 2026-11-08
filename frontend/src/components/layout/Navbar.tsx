@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { ShoppingBag, User, Sparkles, LogOut } from 'lucide-react';
+import { ShoppingBag, User, Sparkles, LogOut, ShieldCheck } from 'lucide-react';
 import { BRAND } from '@/config/brand';
 import { useCart } from '@/features/cart/CartContext';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -62,6 +62,16 @@ export const Navbar: React.FC = () => {
                   Hola, {user.fullName.split(' ')[0]}
                 </span>
               </Link>
+              {user.role === 'ROLE_ADMIN' && (
+                <Link
+                  to="/admin"
+                  className="navbar__action-btn navbar__action-btn--admin"
+                  aria-label="Panel de Administración"
+                >
+                  <ShieldCheck size={20} aria-hidden="true" />
+                  <span className="navbar__action-text">Panel Admin</span>
+                </Link>
+              )}
               <button
                 type="button"
                 className="navbar__action-btn"

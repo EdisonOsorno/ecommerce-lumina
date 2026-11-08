@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { BRAND } from '@/config/brand';
 import './Footer.css';
 
@@ -21,6 +22,7 @@ export const Footer: React.FC = () => {
             <li><a href="/catalogo">Catálogo de Productos</a></li>
             <li><a href="/carrito">Carrito</a></li>
             <li><a href="/nosotros">Sobre el Proyecto</a></li>
+            <li><Link to="/admin">Administración</Link></li>
           </ul>
         </div>
 

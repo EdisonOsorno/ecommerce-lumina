@@ -9,6 +9,7 @@ import { RegisterPage } from '@/features/auth/RegisterPage';
 import { CheckoutPage } from '@/features/checkout/CheckoutPage';
 import { OrderConfirmationPage } from '@/features/checkout/OrderConfirmationPage';
 import { MyOrdersPage } from '@/features/account/MyOrdersPage';
+import { AdminPage } from '@/features/admin/AdminPage';
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: 'cuenta/pedidos',
         element: <MyOrdersPage />,
+      },
+      {
+        path: 'admin',
+        element: <AdminPage />,
       },
       {
         path: 'nosotros',

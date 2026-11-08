@@ -3,6 +3,7 @@ package com.lumina.config;
 import com.lumina.shared.errors.EmailAlreadyExistsException;
 import com.lumina.shared.errors.InsufficientStockException;
 import com.lumina.shared.errors.ResourceNotFoundException;
+import com.lumina.shared.errors.SkuAlreadyExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -32,6 +33,15 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Email ya registrado");
         problem.setType(URI.create("https://luminacosmeticos.demo/errors/email-already-exists"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(SkuAlreadyExistsException.class)
+    public ProblemDetail handleSkuAlreadyExists(SkuAlreadyExistsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("SKU ya registrado");
+        problem.setType(URI.create("https://luminacosmeticos.demo/errors/sku-already-exists"));
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

@@ -28,4 +28,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("searchTerm") String searchTerm,
             Pageable pageable
     );
+
+    // ------------------------------------------------------------------
+    // Backoffice (Fase 5C): CRUD comercial de productos
+    // ------------------------------------------------------------------
+
+    /** Unicidad del SKU (insensible a mayúsculas) antes de crear. */
+    boolean existsBySkuIgnoreCase(String sku);
+
+    /** Unicidad del slug generado a partir del nombre antes de crear. */
+    boolean existsBySlugIgnoreCase(String slug);
+
+    /** Listado admin de TODOS los productos (activos e inactivos), más nuevos primero. */
+    List<Product> findAllByOrderByIdDesc();
 }

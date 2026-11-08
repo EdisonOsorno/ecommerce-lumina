@@ -43,8 +43,11 @@ class CatalogControllerIntegrationTest {
                 .andExpect(jsonPath("$.pageNumber", is(0)))
                 .andExpect(jsonPath("$.pageSize", is(6)))
                 .andExpect(jsonPath("$.totalElements", greaterThanOrEqualTo(10)))
-                .andExpect(jsonPath("$.content[0].price", notNullValue()))
-                .andExpect(jsonPath("$.content[0].inStock", is(true)));
+                .andExpect(jsonPath("$.content[0].price", notNullValue()));
+                // Nota (Fase 5C): el sort es id,desc → content[0] siempre es el producto
+                // más nuevo, que puede ser creado por el backoffice con stock arbitrario.
+                // La aserción inStock en índice fijo es inestable por diseño y se retiró;
+                // el comportamiento de stock sigue cubierto en shouldReturnProductDetail.
     }
 
     @Test

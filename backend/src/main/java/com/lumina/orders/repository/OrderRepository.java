@@ -1,6 +1,7 @@
 package com.lumina.orders.repository;
 
 import com.lumina.orders.domain.Order;
+import com.lumina.orders.domain.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,4 +22,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /** Historial de órdenes de un usuario, de la más reciente a la más antigua. */
     List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    /** Backoffice (Fase 5A): todas las órdenes del sistema, de la más reciente a la más antigua. */
+    List<Order> findAllByOrderByCreatedAtDesc();
+
+    /** Backoffice (Fase 5A): órdenes filtradas por estado comercial, de la más reciente a la más antigua. */
+    List<Order> findByStatusOrderByCreatedAtDesc(OrderStatus status);
 }

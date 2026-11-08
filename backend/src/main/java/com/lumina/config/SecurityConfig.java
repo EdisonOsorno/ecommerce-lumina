@@ -44,6 +44,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Endpoints REST stateless con JWT en cabecera; no usamos cookies de sesión
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Backoffice (Fase 5A): SOLO ROLE_ADMIN. Primera regla para que
+                        // tenga prioridad sobre cualquier permitAll posterior.
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Autenticación: totalmente pública
                         .requestMatchers("/api/auth/**").permitAll()
                         // Endpoints públicos de Swagger y OpenAPI

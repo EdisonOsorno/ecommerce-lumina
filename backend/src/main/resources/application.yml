@@ -52,3 +52,11 @@ lumina:
   security:
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+# Backoffice (Fase 5A): semillero y rescate del administrador.
+# En producción, asignar ADMIN_EMAIL / ADMIN_PASSWORD por variables de entorno.
+app:
+  admin:
+    email: ${ADMIN_EMAIL:admin@lumina.demo}
+    password: ${ADMIN_PASSWORD:AdminLumina2026!}
+    override-password: ${ADMIN_OVERRIDE_PASSWORD:false}

@@ -9,6 +9,7 @@ import com.lumina.inventory.repository.StockMovementRepository;
 import com.lumina.orders.domain.Order;
 import com.lumina.orders.domain.OrderItem;
 import com.lumina.orders.domain.OrderStatus;
+import com.lumina.orders.dto.AdminOrderSummaryResponse;
 import com.lumina.orders.dto.CreateOrderItemRequest;
 import com.lumina.orders.dto.CreateOrderRequest;
 import com.lumina.orders.dto.OrderItemResponse;
@@ -231,6 +232,49 @@ public class OrderService {
     }
 
     /**
+     * Backoffice (Fase 5A): listado de TODAS las órdenes del sistema (clientes
+     * e invitados) de la más reciente a la más antigua, con filtro opcional
+     * por estado comercial. Sin restricciones IDOR: es ruta exclusivamente admin.
+     */
+    @Transactional(readOnly = true)
+    public List<AdminOrderSummaryResponse> listOrdersForAdmin(OrderStatus statusFilter) {
+        List<Order> orders = statusFilter == null
+                ? orderRepository.findAllByOrderByCreatedAtDesc()
+                : orderRepository.findByStatusOrderByCreatedAtDesc(statusFilter);
+        return orders.stream()
+                .map(this::toAdminSummary)
+                .toList();
+    }
+
+    /**
+     * Backoffice (Fase 5A): detalle completo de una orden por número público.
+     * No aplica el blindaje IDOR (lo protege la regla /api/admin/** de SecurityConfig).
+     */
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderDetailForAdmin(String orderNumber) {
+        return orderRepository.findByOrderNumber(orderNumber)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe un pedido con el número: " + orderNumber));
+    }
+
+    /**
+     * Backoffice (Fase 5A): transición de estado del ciclo de vida comercial
+     * (PAID → SHIPPED → DELIVERED, o CANCELLED). Persiste y retorna el detalle
+     * fresco de la orden actualizada.
+     */
+    @Transactional
+    public OrderResponse updateOrderStatus(String orderNumber, OrderStatus newStatus) {
+        Order order = orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe un pedido con el número: " + orderNumber));
+
+        order.setStatus(newStatus);
+        Order saved = orderRepository.save(order);
+        return toResponse(saved);
+    }
+
+    /**
      * Regla de acceso IDOR para una orden propiedad de un usuario.
      *
      * @param ownerId        ID del dueño de la orden
@@ -284,6 +328,24 @@ public class OrderService {
     /** Convierte el wall-clock local de la entidad al instante verdadero (misma zona donde se creó). */
     private Instant toInstant(LocalDateTime createdAt) {
         return createdAt.atZone(ZoneId.systemDefault()).toInstant();
+    }
+
+    /** Resumen administrativo: igual que toSummary pero con datos de contacto y ciudad de envío. */
+    private AdminOrderSummaryResponse toAdminSummary(Order order) {
+        int itemsCount = order.getItems().stream()
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
+        return new AdminOrderSummaryResponse(
+                order.getId(),
+                order.getOrderNumber(),
+                order.getCustomerName(),
+                order.getCustomerEmail(),
+                order.getShippingCity(),
+                order.getTotalAmount(),
+                order.getStatus().name(),
+                toInstant(order.getCreatedAt()),
+                itemsCount
+        );
     }
 
     private OrderSummaryResponse toSummary(Order order) {

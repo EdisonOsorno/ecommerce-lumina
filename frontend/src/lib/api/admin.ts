@@ -160,3 +160,28 @@ export function toggleAdminProductStatus(
     'No fue posible cambiar el estado del producto.'
   );
 }
+
+/**
+ * Multipart upload de una imagen de producto desde el equipo del admin.
+ * No usa adminRequest porque el cuerpo es FormData (el navegador define el
+ * Content-Type con el boundary; enviarlo manualmente lo rompería).
+ * El backend guarda el archivo en ./uploads/products con nombre único y
+ * responde { url: "/uploads/products/<uuid>-<nombre>" }.
+ */
+export async function uploadProductImage(token: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/uploads/images`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error(
+      await extractProblemDetailMessage(response, 'No fue posible subir la imagen.')
+    );
+  }
+  const payload = (await response.json()) as { url: string };
+  return payload.url;
+}

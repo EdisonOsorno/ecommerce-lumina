@@ -53,6 +53,9 @@ public class SecurityConfig {
                         .requestMatchers("/api-docs/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Endpoints públicos del catálogo e inicio
                         .requestMatchers("/api/catalog/**", "/api/health", "/api/health/**").permitAll()
+                        // Imágenes del catálogo subidas por el admin: públicas
+                        // (WebMvcConfigurer las sirve desde ./uploads)
+                        .requestMatchers("/uploads/**").permitAll()
                         // Consola H2 para dev local
                         .requestMatchers("/h2-console/**").permitAll()
                         // Pedidos: el historial propio exige sesión (regla más específica,

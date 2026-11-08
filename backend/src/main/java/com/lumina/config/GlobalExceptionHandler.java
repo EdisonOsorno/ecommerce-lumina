@@ -123,6 +123,17 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ProblemDetail handleMaxUploadSize(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "La imagen supera el tamaño máximo permitido (5 MB)."
+        );
+        problem.setTitle("Imagen demasiado grande");
+        problem.setType(URI.create("https://luminacosmeticos.demo/errors/max-upload-size"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneralException(Exception ex) {
         // En producción no exponemos trazas internas

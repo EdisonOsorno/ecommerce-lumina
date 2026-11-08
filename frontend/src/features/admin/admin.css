@@ -191,23 +191,49 @@
 
 .admin-modal {
   width: 100%;
-  max-width: 480px;
+  max-width: 620px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   background-color: var(--color-bg-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   padding: var(--space-6);
 }
 
+/* Cuerpo del formulario: la zona que se desplaza; el título y las
+   acciones (botones) quedan siempre visibles fijos en el modal. */
+.admin-modal__body {
+  overflow-y: auto;
+  padding-right: var(--space-2);
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* Cuadrícula de 2 columnas para campos emparejados (SKU|Categoría,
+   Precio|Precio de comparación). En móvil se apila. */
+.admin-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.admin-modal__grid .admin-field {
+  margin-top: 0;
+}
+
 .admin-modal__title {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-main);
+  flex-shrink: 0;
 }
 
 .admin-modal__subtitle {
   margin-top: var(--space-2);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 .admin-field {
@@ -248,12 +274,51 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
+  flex-shrink: 0;
+}
+
+/* ---------- Subida de imágenes en el modal de producto (Fase 5C) ---------- */
+
+.admin-image-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.admin-image-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-subtle);
+}
+
+.admin-image-preview img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-default);
+  background-color: var(--color-bg-surface);
+}
+
+.admin-image-preview__actions {
+  display: flex;
+  gap: var(--space-2);
 }
 
 @media (max-width: 640px) {
   .admin-modal {
     padding: var(--space-5);
+  }
+  .admin-modal__grid {
+    grid-template-columns: 1fr;
   }
 }
 

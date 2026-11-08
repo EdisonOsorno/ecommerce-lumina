@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import {
   ArrowRight,
   Boxes,
   ClipboardList,
+  Image,
   Package,
   PackageMinus,
   Pencil,
@@ -21,6 +22,7 @@ import {
   toggleAdminProductStatus,
   updateAdminOrderStatus,
   updateAdminProduct,
+  uploadProductImage,
 } from '@/lib/api/admin';
 import { fetchCategories } from '@/lib/api/catalog';
 import { BRAND } from '@/config/brand';
@@ -106,6 +108,9 @@ function parseNumericField(raw: string): number {
   return Number(raw.replace(',', '.'));
 }
 
+/** Tipos MIME válidos para la imagen de producto (mismo criterio del backend). */
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 /** Estilo para ocultar visualmente el caption de la tabla (accesible). */
 const srOnlyStyle: React.CSSProperties = {
   position: 'absolute',
@@ -154,6 +159,9 @@ export const AdminPage: React.FC = () => {
   const [productModal, setProductModal] = useState<ProductModal>(null);
   const [productSubmitting, setProductSubmitting] = useState(false);
   const [productModalError, setProductModalError] = useState<string | null>(null);
+  // Subida de imagen desde el equipo: input de archivos oculto + estado de carga
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [feedback, setFeedback] = useState<AdminFeedback | null>(null);
 
@@ -576,6 +584,38 @@ export const AdminPage: React.FC = () => {
     [token]
   );
 
+  // Selecciona un archivo del equipo y lo sube de inmediato al backend;
+  // la URL devuelta (/uploads/products/...) llena el campo de imagen del modal,
+  // que también acepta URL externa escrita a mano.
+  const handleImageFileSelected = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const selected = event.target.files?.[0] ?? null;
+      event.target.value = ''; // permite volver a elegir el mismo archivo sin recargar
+      if (!selected || !token || uploadingImage) {
+        return;
+      }
+      if (!ALLOWED_IMAGE_TYPES.includes(selected.type)) {
+        setProductModalError('Formato de imagen no soportado. Solo se admiten JPG, PNG o WebP.');
+        return;
+      }
+      setProductModalError(null);
+      setUploadingImage(true);
+      uploadProductImage(token, selected)
+        .then((url) => {
+          setFormImageUrl(url);
+        })
+        .catch((err: unknown) => {
+          setProductModalError(
+            err instanceof Error ? err.message : 'Error inesperado al subir la imagen.'
+          );
+        })
+        .finally(() => {
+          setUploadingImage(false);
+        });
+    },
+    [token, uploadingImage]
+  );
+
   // Guard de ruta: solo ROLE_ADMIN entra al backoffice
   if (!isAdmin) {
     return <Navigate to="/cuenta/ingreso" replace />;
@@ -813,7 +853,7 @@ export const AdminPage: React.FC = () => {
               leftIcon={<Plus size={16} />}
               onClick={openCreateProductModal}
             >
-              + Nuevo Producto
+              Nuevo Producto
             </Button>
           </div>
 
@@ -931,6 +971,7 @@ export const AdminPage: React.FC = () => {
             </p>
 
             <form onSubmit={handleAdjustSubmit}>
+              <div className="admin-modal__body">
               <div className="admin-field">
                 <label htmlFor="adjust-delta">Cantidad (delta)</label>
                 <input
@@ -963,6 +1004,7 @@ export const AdminPage: React.FC = () => {
                   El ajuste queda auditado con tu motivo en el historial de movimientos.
                 </p>
               </div>
+              </div>{/* /.admin-modal__body */}
               <div className="admin-modal__actions">
                 <Button variant="ghost" onClick={closeAdjustModal} type="button">
                   Cancelar
@@ -1014,6 +1056,7 @@ export const AdminPage: React.FC = () => {
             )}
 
             <form onSubmit={handleProductSubmit}>
+              <div className="admin-modal__body">
               <div className="admin-field">
                 <label htmlFor="product-name">Nombre *</label>
                 <input
@@ -1028,77 +1071,151 @@ export const AdminPage: React.FC = () => {
                 />
               </div>
 
-              {productModal.mode === 'create' && (
+              {productModal.mode === 'create' ? (
+                <div className="admin-modal__grid">
+                  <div className="admin-field">
+                    <label htmlFor="product-sku">SKU *</label>
+                    <input
+                      id="product-sku"
+                      className="admin-input"
+                      type="text"
+                      maxLength={50}
+                      placeholder="Ej.: LUM-FAC-NEW"
+                      value={formSku}
+                      onChange={(event) => setFormSku(event.target.value)}
+                    />
+                    <p className="admin-hint">Debe ser único; el backend responde 409 si ya existe.</p>
+                  </div>
+                  <div className="admin-field">
+                    <label htmlFor="product-category">Categoría *</label>
+                    <select
+                      id="product-category"
+                      className="admin-input"
+                      value={formCategoryId}
+                      onChange={(event) => setFormCategoryId(event.target.value)}
+                    >
+                      <option value="">Selecciona una categoría</option>
+                      {(categories ?? []).map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ) : (
                 <div className="admin-field">
-                  <label htmlFor="product-sku">SKU *</label>
-                  <input
-                    id="product-sku"
+                  <label htmlFor="product-category">Categoría *</label>
+                  <select
+                    id="product-category"
                     className="admin-input"
-                    type="text"
-                    maxLength={50}
-                    placeholder="Ej.: LUM-FAC-NEW"
-                    value={formSku}
-                    onChange={(event) => setFormSku(event.target.value)}
-                  />
-                  <p className="admin-hint">Debe ser único; el backend responde 409 si ya existe.</p>
+                    value={formCategoryId}
+                    onChange={(event) => setFormCategoryId(event.target.value)}
+                  >
+                    <option value="">Selecciona una categoría</option>
+                    {(categories ?? []).map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
-              <div className="admin-field">
-                <label htmlFor="product-category">Categoría *</label>
-                <select
-                  id="product-category"
-                  className="admin-input"
-                  value={formCategoryId}
-                  onChange={(event) => setFormCategoryId(event.target.value)}
-                >
-                  <option value="">Selecciona una categoría</option>
-                  {(categories ?? []).map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+              <div className="admin-modal__grid">
+                <div className="admin-field">
+                  <label htmlFor="product-price">Precio (COP) *</label>
+                  <input
+                    id="product-price"
+                    className="admin-input"
+                    type="number"
+                    step="100"
+                    min="0"
+                    placeholder="Ej.: 49900"
+                    value={formPrice}
+                    onChange={(event) => setFormPrice(event.target.value)}
+                  />
+                </div>
+                <div className="admin-field">
+                  <label htmlFor="product-compare">Precio de comparación (opcional)</label>
+                  <input
+                    id="product-compare"
+                    className="admin-input"
+                    type="number"
+                    step="100"
+                    min="0"
+                    placeholder="Ej.: 62000 (mayor o igual al precio)"
+                    value={formCompareAtPrice}
+                    onChange={(event) => setFormCompareAtPrice(event.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="admin-field">
-                <label htmlFor="product-price">Precio (COP) *</label>
+                <label htmlFor="product-image">Imagen del producto</label>
+                {/* Input de archivos oculto: el botón estilizado lo dispara por ref */}
                 <input
-                  id="product-price"
-                  className="admin-input"
-                  type="number"
-                  step="100"
-                  min="0"
-                  placeholder="Ej.: 49900"
-                  value={formPrice}
-                  onChange={(event) => setFormPrice(event.target.value)}
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  style={srOnlyStyle}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  onChange={handleImageFileSelected}
                 />
-              </div>
-
-              <div className="admin-field">
-                <label htmlFor="product-compare">Precio de comparación (opcional)</label>
-                <input
-                  id="product-compare"
-                  className="admin-input"
-                  type="number"
-                  step="100"
-                  min="0"
-                  placeholder="Ej.: 62000 (mayor o igual al precio)"
-                  value={formCompareAtPrice}
-                  onChange={(event) => setFormCompareAtPrice(event.target.value)}
-                />
-              </div>
-
-              <div className="admin-field">
-                <label htmlFor="product-image">URL de imagen (opcional)</label>
+                <div className="admin-image-tools">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    leftIcon={<Image size={16} />}
+                    isLoading={uploadingImage}
+                    disabled={uploadingImage}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Seleccionar imagen del equipo
+                  </Button>
+                  <span className="admin-hint">JPG, PNG o WebP — se sube al servidor de inmediato.</span>
+                </div>
                 <input
                   id="product-image"
                   className="admin-input"
                   type="text"
-                  placeholder="https://..."
+                  placeholder="...o pega una URL externa (opcional)"
                   value={formImageUrl}
                   onChange={(event) => setFormImageUrl(event.target.value)}
+                  aria-label="URL externa de la imagen (opcional)"
                 />
+                {formImageUrl.trim() !== '' && (
+                  <div className="admin-image-preview">
+                    <img
+                      src={formImageUrl}
+                      alt="Vista previa de la imagen seleccionada"
+                      onError={(event) => {
+                        event.currentTarget.src = BRAND.defaultProductImage;
+                      }}
+                    />
+                    <div className="admin-image-preview__actions">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        onClick={() => setFormImageUrl('')}
+                      >
+                        Quitar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        disabled={uploadingImage}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        Cambiar
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="admin-field">
@@ -1132,6 +1249,7 @@ export const AdminPage: React.FC = () => {
                 </div>
               )}
 
+              </div>{/* /.admin-modal__body */}
               <div className="admin-modal__actions">
                 <Button variant="ghost" onClick={closeProductModal} type="button">
                   Cancelar

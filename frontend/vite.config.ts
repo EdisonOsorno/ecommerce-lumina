@@ -18,6 +18,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Imágenes subidas por el admin (backend las sirve desde ./uploads)
+      '/uploads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   test: {

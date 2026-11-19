@@ -49,3 +49,31 @@ backend/target/site/
 coverage/
 playwright-report/
 test-results/
+
+# User Uploads & Media (Archivos subidos por usuarios/admin que nunca deben ir al repo)
+uploads/
+backend/uploads/
+frontend/public/uploads/
+
+# Local databases & storage
+*.db
+*.mv.db
+*.trace.db
+
+# Certificates, Keys & Private Credentials (Protección absoluta de claves y secretos)
+*.pem
+*.key
+*.p12
+*.jks
+*.crt
+secrets.yml
+secrets.json
+credentials.json
+*.secret
+
+# Additional OS & System files
+ehthumbs.db
+ehthumbs_vista.db
+*.lnk
+*.bak
+*.swp

@@ -220,8 +220,8 @@ En `backend/src/main/java/com/lumina/admin/metrics/service/AdminMetricsService.j
 
 **Terminal 1 — Backend (Spring Boot con H2 in-memory):**
 ```powershell
-$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"
-$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
+# Configurar JAVA_HOME a tu instalación local de JDK 21 si no está en el PATH
+# $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21..."
 cd backend
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev-h2"
 ```

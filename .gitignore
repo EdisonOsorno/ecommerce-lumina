@@ -77,3 +77,8 @@ ehthumbs_vista.db
 *.lnk
 *.bak
 *.swp
+
+# Documentación interna, habilidades y recetas propietarias (SOLO LOCAL)
+docs/
+skill-*.md
+*.skill.md

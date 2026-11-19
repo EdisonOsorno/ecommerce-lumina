@@ -6,6 +6,8 @@ import { ProductDetailPage } from '@/features/catalog/ProductDetailPage';
 import { CartPage } from '@/features/cart/CartPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
+import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { CheckoutPage } from '@/features/checkout/CheckoutPage';
 import { OrderConfirmationPage } from '@/features/checkout/OrderConfirmationPage';
 import { MyOrdersPage } from '@/features/account/MyOrdersPage';
@@ -40,6 +42,14 @@ export const router = createBrowserRouter([
       {
         path: 'cuenta/registro',
         element: <RegisterPage />,
+      },
+      {
+        path: 'cuenta/recuperar-password',
+        element: <ForgotPasswordPage />,
+      },
+      {
+        path: 'cuenta/restablecer-password',
+        element: <ResetPasswordPage />,
       },
       {
         path: 'checkout',

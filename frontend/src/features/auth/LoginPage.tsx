@@ -103,6 +103,22 @@ export const LoginPage: React.FC = () => {
             />
           </div>
 
+          <div
+            style={{
+              textAlign: 'right',
+              marginTop: 'var(--space-1)',
+              marginBottom: 'var(--space-3)',
+            }}
+          >
+            <Link
+              to="/cuenta/recuperar-password"
+              className="auth-card__link"
+              style={{ fontSize: 'var(--font-size-sm)' }}
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+
           <Button
             type="submit"
             variant="primary"

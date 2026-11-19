@@ -33,12 +33,9 @@ Plataforma de comercio electrónico funcional, accesible, segura y transaccional
 
 ## 2. Estructura del Repositorio
 
-> 📘 **Guía de Replicación para otros Negocios:** Consulta [`docs/blueprint-ecommerce-multiproposito.md`](docs/blueprint-ecommerce-multiproposito.md) para el manual maestro de arquitectura y pasos para clonar este ecommerce en cualquier otra actividad económica (moda, ferretería, tecnología, alimentos gourmet, etc.).
-
 ```text
 ecommerce-cosmeticos/
-├── docs/                               # Requisitos, arquitectura, guías de replicación
-│   ├── blueprint-ecommerce-multiproposito.md # MANUAL MAESTRO DE REPLICACIÓN
+├── docs/                               # Requisitos, arquitectura y decisiones (ADRs)
 │   └── requisitos-y-reglas-negocio.md
 ├── frontend/                           # Aplicación cliente React + Vite + TypeScript
 │   ├── src/

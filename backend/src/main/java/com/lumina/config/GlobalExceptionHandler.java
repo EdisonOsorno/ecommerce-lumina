@@ -3,6 +3,7 @@ package com.lumina.config;
 import com.lumina.shared.errors.EmailAlreadyExistsException;
 import com.lumina.shared.errors.InsufficientStockException;
 import com.lumina.shared.errors.InvalidCurrentPasswordException;
+import com.lumina.shared.errors.InvalidResetTokenException;
 import com.lumina.shared.errors.ResourceNotFoundException;
 import com.lumina.shared.errors.SkuAlreadyExistsException;
 import org.springframework.http.HttpStatus;
@@ -129,6 +130,15 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         problem.setTitle("Contraseña actual incorrecta");
         problem.setType(URI.create("https://lumina.demo/errors/invalid-current-password"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidResetTokenException.class)
+    public ProblemDetail handleInvalidResetToken(InvalidResetTokenException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Token de recuperación inválido");
+        problem.setType(URI.create("https://lumina.demo/errors/invalid-reset-token"));
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

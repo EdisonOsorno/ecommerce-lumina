@@ -1,0 +1,124 @@
+/* ====================================================================
+ * Mi Perfil (/cuenta/perfil) — tokens de diseño de tokens.css
+ * ==================================================================== */
+
+.profile-page {
+  padding: var(--space-10) 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.profile-page__header {
+  margin-bottom: var(--space-8);
+}
+
+.profile-page__title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
+}
+
+.profile-page__subtitle {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.profile-loading {
+  padding: var(--space-12) 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Tarjetas ---------- */
+
+.profile-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.profile-card {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-6);
+}
+
+.profile-card__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-main);
+  margin-bottom: var(--space-5);
+}
+
+.profile-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-5);
+}
+
+/* ---------- Campos ---------- */
+
+.profile-field {
+  margin-top: var(--space-4);
+}
+
+.profile-field:first-of-type {
+  margin-top: 0;
+}
+
+.profile-field label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-main);
+}
+
+.profile-input {
+  width: 100%;
+  padding: var(--space-3);
+  font-size: var(--font-size-base);
+  color: var(--color-text-main);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+
+.profile-input:focus {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 1px;
+  border-color: var(--color-brand-primary);
+}
+
+.profile-input:disabled {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.profile-hint {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Error de validación en vivo (teléfono / confirmación de contraseña) */
+.profile-field__error {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: #b3261e;
+}
+
+@media (max-width: 640px) {
+  .profile-page {
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .profile-card {
+    padding: var(--space-5);
+  }
+}

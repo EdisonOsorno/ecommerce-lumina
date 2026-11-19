@@ -1,14 +1,62 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { ShoppingBag, User, Sparkles, LogOut, ShieldCheck } from 'lucide-react';
+import {
+  ChevronDown,
+  LogOut,
+  Package,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  User,
+} from 'lucide-react';
 import { BRAND } from '@/config/brand';
 import { useCart } from '@/features/cart/CartContext';
 import { useAuth } from '@/features/auth/AuthContext';
 import './Navbar.css';
 
+/**
+ * Cabecera principal. Cuando hay sesión, el saludo se convierte en un menú
+ * desplegable de usuario (Mi Perfil, Mis Pedidos, Panel Admin si aplica y
+ * Cerrar Sesión) que se cierra con clic fuera, Escape o al navegar.
+ */
 export const Navbar: React.FC = () => {
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
+
+  // Cierre por clic fuera del menú (hook ligero sin dependencias externas)
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return;
+    }
+    const handlePointerDown = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  // Si la sesión termina (logout desde otro punto), el menú no debe quedar abierto
+  useEffect(() => {
+    if (!user) {
+      setIsMenuOpen(false);
+    }
+  }, [user]);
 
   return (
     <header className="navbar">
@@ -51,37 +99,91 @@ export const Navbar: React.FC = () => {
 
         <div className="navbar__actions">
           {user ? (
-            <>
-              <Link
-                to="/cuenta/pedidos"
-                className="navbar__action-btn"
-                aria-label="Mis Pedidos"
+            <div className="navbar__user" ref={userMenuRef}>
+              <button
+                type="button"
+                className="navbar__action-btn navbar__user-trigger"
+                onClick={() => setIsMenuOpen((open) => !open)}
+                aria-expanded={isMenuOpen}
+                aria-haspopup="menu"
+                aria-controls="navbar-user-menu"
+                aria-label="Abrir menú de usuario"
               >
                 <User size={20} aria-hidden="true" />
                 <span className="navbar__action-text">
                   Hola, {user.fullName.split(' ')[0]}
                 </span>
-              </Link>
-              {user.role === 'ROLE_ADMIN' && (
-                <Link
-                  to="/admin"
-                  className="navbar__action-btn navbar__action-btn--admin"
-                  aria-label="Panel de Administración"
-                >
-                  <ShieldCheck size={20} aria-hidden="true" />
-                  <span className="navbar__action-text">Panel Admin</span>
-                </Link>
-              )}
-              <button
-                type="button"
-                className="navbar__action-btn"
-                onClick={logout}
-                aria-label="Cerrar sesión"
-              >
-                <LogOut size={20} aria-hidden="true" />
-                <span className="navbar__action-text">Salir</span>
+                <ChevronDown
+                  size={16}
+                  className={`navbar__chevron ${isMenuOpen ? 'navbar__chevron--open' : ''}`}
+                  aria-hidden="true"
+                />
               </button>
-            </>
+
+              {isMenuOpen && (
+                <div
+                  id="navbar-user-menu"
+                  className="navbar__user-menu"
+                  role="menu"
+                  aria-label="Menú de usuario"
+                >
+                  <div className="navbar__user-menu-header">
+                    <p className="navbar__user-menu-name">{user.fullName}</p>
+                    <p className="navbar__user-menu-email">{user.email}</p>
+                    {user.role === 'ROLE_ADMIN' && (
+                      <span className="navbar__user-menu-badge">Administrador</span>
+                    )}
+                  </div>
+
+                  <hr className="navbar__user-menu-divider" />
+
+                  <Link
+                    to="/cuenta/perfil"
+                    className="navbar__user-menu-link"
+                    role="menuitem"
+                    onClick={closeMenu}
+                  >
+                    <User size={18} aria-hidden="true" />
+                    Mi Perfil
+                  </Link>
+                  <Link
+                    to="/cuenta/pedidos"
+                    className="navbar__user-menu-link"
+                    role="menuitem"
+                    onClick={closeMenu}
+                  >
+                    <Package size={18} aria-hidden="true" />
+                    Mis Pedidos
+                  </Link>
+                  {user.role === 'ROLE_ADMIN' && (
+                    <Link
+                      to="/admin"
+                      className="navbar__user-menu-link"
+                      role="menuitem"
+                      onClick={closeMenu}
+                    >
+                      <ShieldCheck size={18} aria-hidden="true" />
+                      Panel Admin
+                    </Link>
+                  )}
+
+                  <hr className="navbar__user-menu-divider" />
+
+                  <button
+                    type="button"
+                    className="navbar__user-menu-link navbar__user-menu-link--logout"
+                    role="menuitem"
+                    onClick={() => {
+                      closeMenu();
+                      logout();
+                    }}
+                  >
+                    <LogOut size={18} aria-hidden="true" />
+                    Cerrar Sesión
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <Link
               to="/cuenta/ingreso"

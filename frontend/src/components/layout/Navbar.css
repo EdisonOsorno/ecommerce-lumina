@@ -125,11 +125,109 @@
   justify-content: center;
 }
 
+/* ---------- Menú desplegable de usuario (Fase 5D) ---------- */
+
+.navbar__user {
+  position: relative;
+}
+
+.navbar__user-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.navbar__chevron {
+  transition: transform var(--transition-fast);
+}
+
+.navbar__chevron--open {
+  transform: rotate(180deg);
+}
+
+.navbar__user-menu {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 150;
+}
+
+.navbar__user-menu-header {
+  padding: var(--space-2) var(--space-3);
+}
+
+.navbar__user-menu-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-main);
+}
+
+.navbar__user-menu-email {
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+.navbar__user-menu-badge {
+  display: inline-block;
+  margin-top: var(--space-2);
+  padding: 2px var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brand-primary);
+  background-color: var(--color-brand-primary-light);
+  border-radius: var(--radius-full);
+}
+
+.navbar__user-menu-divider {
+  border: none;
+  border-top: 1px solid var(--color-border-subtle);
+  margin: var(--space-2) 0;
+}
+
+.navbar__user-menu-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  text-align: left;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-main);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.navbar__user-menu-link:hover {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-brand-primary);
+}
+
+.navbar__user-menu-link--logout {
+  color: var(--color-text-main);
+}
+
 @media (max-width: 640px) {
   .navbar__action-text {
     display: none;
   }
   .navbar__links {
     gap: var(--space-3);
+  }
+  .navbar__user-menu {
+    min-width: 220px;
   }
 }

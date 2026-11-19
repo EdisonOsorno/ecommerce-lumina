@@ -63,6 +63,11 @@ interface AuthContextValue {
   register: (credentials: RegisterCredentials) => Promise<void>;
   /** Cerrar sesión y limpiar el almacenamiento */
   logout: () => void;
+  /**
+   * Sincroniza el nombre en memoria y en localStorage tras editar el perfil,
+   * sin exigir volver a iniciar sesión (Fase 5D).
+   */
+  updateCurrentUser: (data: { firstName: string; lastName: string }) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -127,6 +132,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   }, []);
 
+  // Actualización del nombre tras guardar el perfil: reescribe el user en
+  // memoria y el snapshot persistido para que la cabecera cambie al instante.
+  const updateCurrentUser = useCallback((data: { firstName: string; lastName: string }) => {
+    setUser((prev) => {
+      if (!prev) {
+        return prev;
+      }
+      const updated: User = {
+        ...prev,
+        fullName: `${data.firstName} ${data.lastName}`.trim(),
+      };
+      try {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
+      } catch {
+        // localStorage lleno o deshabilitado — el cambio vive solo en memoria
+      }
+      return updated;
+    });
+  }, []);
+
   const isAuthenticated = useMemo(() => token !== null && user !== null, [token, user]);
 
   const value = useMemo<AuthContextValue>(
@@ -137,8 +162,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       register,
       logout,
+      updateCurrentUser,
     }),
-    [user, token, isAuthenticated, login, register, logout]
+    [user, token, isAuthenticated, login, register, logout, updateCurrentUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

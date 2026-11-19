@@ -405,3 +405,241 @@
     width: 100%;
   }
 }
+
+/* ---------- Pestaña Métricas & Analítica (Fase 5F) ---------- */
+
+.admin-metrics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+/* Fila 1: tarjetas KPI financieras */
+
+.admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.admin-kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-5);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 4px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-kpi-card--success {
+  background-color: var(--color-success-bg);
+  border-left-color: var(--color-success);
+}
+
+.admin-kpi-card--danger {
+  background-color: var(--color-error-bg);
+  border-left-color: var(--color-error);
+}
+
+.admin-kpi-card--warning {
+  background-color: var(--color-warning-bg);
+  border-left-color: var(--color-warning);
+}
+
+.admin-kpi-card--info {
+  background-color: var(--color-info-bg);
+  border-left-color: var(--color-info);
+}
+
+.admin-kpi-card__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.admin-kpi-card__value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  color: var(--color-text-main);
+  overflow-wrap: anywhere;
+}
+
+.admin-kpi-card__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.admin-kpi-card--success .admin-kpi-card__hint {
+  color: var(--color-success);
+}
+
+.admin-kpi-card--danger .admin-kpi-card__hint {
+  color: var(--color-error);
+}
+
+.admin-kpi-card--warning .admin-kpi-card__hint {
+  color: var(--color-warning);
+}
+
+.admin-kpi-card--info .admin-kpi-card__hint {
+  color: var(--color-info);
+}
+
+/* Contenedores de secciones (desglose por estado, top y baja demanda) */
+
+.admin-metrics-section {
+  min-width: 0;
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-metrics-section__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-main);
+}
+
+.admin-metrics-section__subtitle {
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.admin-metrics-section .admin-table-wrap {
+  box-shadow: none;
+}
+
+.admin-metrics-section .admin-table {
+  min-width: 620px;
+}
+
+/* Fila 2: desglose por estado */
+
+.admin-status-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.admin-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-4);
+  background-color: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-top: 3px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+
+.admin-status-card--pending_payment {
+  border-top-color: var(--color-warning);
+}
+
+.admin-status-card--paid,
+.admin-status-card--delivered {
+  border-top-color: var(--color-success);
+}
+
+.admin-status-card--shipped {
+  border-top-color: var(--color-info);
+}
+
+.admin-status-card--cancelled {
+  border-top-color: var(--color-error);
+}
+
+.admin-status-card--refunded {
+  border-top-color: var(--color-brand-accent);
+}
+
+.admin-status-card__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.admin-status-card__count {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-main);
+}
+
+.admin-status-card__amount {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* Fila 3: dos bloques de tablas en paralelo */
+
+.admin-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.admin-metrics-grid .admin-metrics-section {
+  margin-bottom: 0;
+}
+
+/* ---------- Responsive de métricas ---------- */
+
+@media (max-width: 1200px) {
+  .admin-status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-metrics-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-metrics-header button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-status-grid {
+    grid-template-columns: 1fr;
+  }
+}

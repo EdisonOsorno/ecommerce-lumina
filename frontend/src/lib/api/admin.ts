@@ -1,5 +1,6 @@
 import { extractProblemDetailMessage } from '@/lib/api/problemDetail';
 import type {
+  AdminDashboardMetrics,
   AdminInventoryItem,
   AdminOrderSummary,
   AdminProduct,
@@ -184,4 +185,21 @@ export async function uploadProductImage(token: string, file: File): Promise<str
   }
   const payload = (await response.json()) as { url: string };
   return payload.url;
+}
+
+/**
+ * Dashboard de métricas y analítica comercial (Fase 5F): resumen financiero,
+ * top de ventas, productos de baja demanda y desglose por estado. Todo lo
+ * calcula el backend desde las órdenes persistidas.
+ */
+export function getAdminDashboardMetrics(
+  token: string
+): Promise<AdminDashboardMetrics> {
+  return adminRequest<AdminDashboardMetrics>(
+    'GET',
+    `${API_BASE_URL}/metrics/dashboard`,
+    token,
+    undefined,
+    'No fue posible cargar las métricas del negocio.'
+  );
 }

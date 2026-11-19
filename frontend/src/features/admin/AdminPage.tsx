@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import {
   ArrowRight,
+  BarChart3,
   Boxes,
   ClipboardList,
   Image,
@@ -9,6 +10,7 @@ import {
   PackageMinus,
   Pencil,
   Plus,
+  RefreshCw,
   ShoppingCart,
   ShieldCheck,
 } from 'lucide-react';
@@ -16,6 +18,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import {
   adjustAdminInventory,
   createAdminProduct,
+  getAdminDashboardMetrics,
   getAdminInventory,
   getAdminOrders,
   getAdminProducts,
@@ -28,6 +31,7 @@ import { fetchCategories } from '@/lib/api/catalog';
 import { BRAND } from '@/config/brand';
 import { formatCurrency } from '@/lib/formatting/currency';
 import type {
+  AdminDashboardMetrics,
   AdminInventoryItem,
   AdminOrderStatus,
   AdminOrderSummary,
@@ -45,7 +49,7 @@ interface AdminFeedback {
 }
 
 type OrdersTabFilter = 'ALL' | AdminOrderStatus;
-type ActiveTab = 'orders' | 'inventory' | 'products';
+type ActiveTab = 'orders' | 'inventory' | 'products' | 'metrics';
 /** Modal de producto: creación o edición con el producto pre-cargado. */
 type ProductModal = { mode: 'create' } | { mode: 'edit'; product: AdminProduct } | null;
 
@@ -56,9 +60,10 @@ const ORDER_STATUS_LABELS: Record<AdminOrderStatus, string> = {
   SHIPPED: 'Enviado',
   DELIVERED: 'Entregado',
   CANCELLED: 'Cancelado',
+  REFUNDED: 'Reembolsado',
 };
 
-/** Filtros rápidos de la pestaña de pedidos (TODOS + 5 estados). */
+/** Filtros rápidos de la pestaña de pedidos (TODOS + 6 estados). */
 const ORDER_FILTERS: { value: OrdersTabFilter; label: string }[] = [
   { value: 'ALL', label: 'Todos' },
   { value: 'PENDING_PAYMENT', label: ORDER_STATUS_LABELS.PENDING_PAYMENT },
@@ -66,6 +71,7 @@ const ORDER_FILTERS: { value: OrdersTabFilter; label: string }[] = [
   { value: 'SHIPPED', label: ORDER_STATUS_LABELS.SHIPPED },
   { value: 'DELIVERED', label: ORDER_STATUS_LABELS.DELIVERED },
   { value: 'CANCELLED', label: ORDER_STATUS_LABELS.CANCELLED },
+  { value: 'REFUNDED', label: ORDER_STATUS_LABELS.REFUNDED },
 ];
 
 /** Opciones del select de cambio de estado por fila. */
@@ -75,6 +81,7 @@ const STATUS_SELECT_OPTIONS: AdminOrderStatus[] = [
   'SHIPPED',
   'DELIVERED',
   'CANCELLED',
+  'REFUNDED',
 ];
 
 /** Bandera de stock: Agotado (rojo), Stock bajo (amarillo) o En stock (verde). */
@@ -89,6 +96,30 @@ function stockLevel(item: AdminInventoryItem): {
     return { label: 'Stock bajo', variant: 'warning' };
   }
   return { label: 'En stock', variant: 'success' };
+}
+
+/** Acción recomendada de reabastecimiento para el top de más vendidos (Fase 5F). */
+function salesStockBadge(stock: number): {
+  label: string;
+  variant: 'success' | 'warning' | 'danger';
+} {
+  if (stock === 0) {
+    return { label: '¡Agotado! Surtir urgente', variant: 'danger' };
+  }
+  if (stock <= 5) {
+    return { label: 'Stock bajo. Surtir pronto', variant: 'warning' };
+  }
+  return { label: 'Stock suficiente', variant: 'success' };
+}
+
+/** Nivel de demanda para los productos de baja rotación (Fase 5F). */
+function demandLevelBadge(level: string): {
+  label: string;
+  variant: 'success' | 'warning' | 'danger';
+} {
+  return level === 'SIN_VENTAS'
+    ? { label: 'Sin ventas', variant: 'danger' }
+    : { label: 'Baja rotación', variant: 'warning' };
 }
 
 /** Fecha legible con formato es-CO (mismo patrón de MyOrdersPage). */
@@ -126,8 +157,9 @@ const srOnlyStyle: React.CSSProperties = {
 
 /**
  * Panel de administración del backoffice (/admin), exclusivo de ROLE_ADMIN.
- * Pestañas: Pedidos (estados), Inventario (ajustes) y Productos (CRUD
- * comercial con soft delete por INVIMA/descontinuación — nunca DELETE físico).
+ * Pestañas: Pedidos (estados), Inventario (ajustes), Productos (CRUD
+ * comercial con soft delete por INVIMA/descontinuación — nunca DELETE físico)
+ * y Métricas & Analítica (ingresos, pérdidas y rotación — Fase 5F).
  */
 export const AdminPage: React.FC = () => {
   const { token, user, isAuthenticated } = useAuth();
@@ -162,6 +194,11 @@ export const AdminPage: React.FC = () => {
   // Subida de imagen desde el equipo: input de archivos oculto + estado de carga
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Métricas y analítica comercial (Fase 5F): carga diferida al abrir la pestaña
+  const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
 
   const [feedback, setFeedback] = useState<AdminFeedback | null>(null);
 
@@ -275,6 +312,37 @@ export const AdminPage: React.FC = () => {
       cancelled = true;
     };
   }, [token]);
+
+  // ================= Métricas (Fase 5F) =================
+
+  // Re-consulta el dashboard (carga inicial de la pestaña o botón "Actualizar datos")
+  const loadMetrics = useCallback(() => {
+    if (!token) {
+      return;
+    }
+    setMetricsLoading(true);
+    setMetricsError(null);
+
+    getAdminDashboardMetrics(token)
+      .then((data) => {
+        setMetrics(data);
+      })
+      .catch((err: unknown) => {
+        setMetricsError(
+          err instanceof Error ? err.message : 'Error inesperado al cargar las métricas.'
+        );
+      })
+      .finally(() => {
+        setMetricsLoading(false);
+      });
+  }, [token]);
+
+  // Carga diferida: solo al entrar por primera vez a la pestaña de métricas
+  useEffect(() => {
+    if (activeTab === 'metrics' && metrics === null) {
+      loadMetrics();
+    }
+  }, [activeTab, metrics, loadMetrics]);
 
   // El mensaje de éxito se descarta solo tras unos segundos
   useEffect(() => {
@@ -629,7 +697,8 @@ export const AdminPage: React.FC = () => {
           <h1 className="admin-title">Panel de Administración</h1>
         </div>
         <p className="admin-subtitle">
-          Gestión de pedidos, estados del ciclo de vida e inventario y productos de la tienda.
+          Gestión de pedidos, estados del ciclo de vida, inventario, productos y métricas
+          comerciales de la tienda.
         </p>
       </header>
 
@@ -672,6 +741,16 @@ export const AdminPage: React.FC = () => {
         >
           <Package size={18} aria-hidden="true" />
           Productos
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'metrics'}
+          className={`admin-tab ${activeTab === 'metrics' ? 'admin-tab--active' : ''}`}
+          onClick={() => setActiveTab('metrics')}
+        >
+          <BarChart3 size={18} aria-hidden="true" />
+          Métricas & Analítica
         </button>
       </div>
 
@@ -942,6 +1021,221 @@ export const AdminPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          ) : null}
+        </section>
+      )}
+
+      {/* ================= Pestaña 4: Métricas & Analítica (Fase 5F) ================= */}
+      {activeTab === 'metrics' && (
+        <section aria-label="Métricas y analítica comercial">
+          <div className="admin-metrics-header">
+            <p className="admin-products-count">
+              Vista ejecutiva de ingresos reales, pérdidas y rotación de productos.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<RefreshCw size={16} />}
+              isLoading={metricsLoading}
+              onClick={loadMetrics}
+            >
+              Actualizar datos
+            </Button>
+          </div>
+
+          {metricsError && (
+            <Alert
+              variant="error"
+              title="No pudimos cargar las métricas"
+              style={{ marginBottom: 'var(--space-5)' }}
+            >
+              {metricsError}
+            </Alert>
+          )}
+
+          {metricsLoading && metrics === null ? (
+            <p role="status" aria-live="polite">
+              Cargando métricas...
+            </p>
+          ) : metrics ? (
+            <>
+              {/* Fila 1: KPIs financieros */}
+              <div className="admin-kpi-grid">
+                <article className="admin-kpi-card admin-kpi-card--success">
+                  <span className="admin-kpi-card__label">Ingresos Netos</span>
+                  <span className="admin-kpi-card__value">
+                    {formatCurrency(metrics.financialSummary.netRevenue)}
+                  </span>
+                  <span className="admin-kpi-card__hint">
+                    {metrics.financialSummary.completedOrdersCount} pedidos pagados/entregados
+                  </span>
+                </article>
+
+                <article className="admin-kpi-card admin-kpi-card--danger">
+                  <span className="admin-kpi-card__label">Ventas Canceladas</span>
+                  <span className="admin-kpi-card__value">
+                    {formatCurrency(metrics.financialSummary.cancelledOrdersLoss)}
+                  </span>
+                  <span className="admin-kpi-card__hint">
+                    {metrics.financialSummary.cancelledOrdersCount} pedidos cancelados
+                  </span>
+                </article>
+
+                <article className="admin-kpi-card admin-kpi-card--warning">
+                  <span className="admin-kpi-card__label">Reembolsos / Devoluciones</span>
+                  <span className="admin-kpi-card__value">
+                    {formatCurrency(metrics.financialSummary.refundedOrdersLoss)}
+                  </span>
+                  <span className="admin-kpi-card__hint">
+                    {metrics.financialSummary.refundedOrdersCount} pedidos reembolsados
+                  </span>
+                </article>
+
+                <article className="admin-kpi-card admin-kpi-card--info">
+                  <span className="admin-kpi-card__label">En Espera de Pago</span>
+                  <span className="admin-kpi-card__value">
+                    {formatCurrency(metrics.financialSummary.pendingOrdersTotal)}
+                  </span>
+                  <span className="admin-kpi-card__hint">
+                    {metrics.financialSummary.pendingOrdersCount} pedidos pendientes
+                  </span>
+                </article>
+              </div>
+
+              {/* Fila 2: distribución por estado */}
+              <section className="admin-metrics-section" aria-labelledby="orders-breakdown-title">
+                <h2 id="orders-breakdown-title" className="admin-metrics-section__title">
+                  Distribución de Pedidos por Estado
+                </h2>
+                <p className="admin-metrics-section__subtitle">
+                  Cantidad de pedidos y monto acumulado por cada estado del ciclo comercial.
+                </p>
+                <div className="admin-status-grid">
+                  {metrics.ordersByStatus.map((entry) => (
+                    <article
+                      key={entry.status}
+                      className={`admin-status-card admin-status-card--${entry.status.toLowerCase()}`}
+                    >
+                      <span className="admin-status-card__label">{entry.label}</span>
+                      <strong className="admin-status-card__count">
+                        {entry.count} {entry.count === 1 ? 'pedido' : 'pedidos'}
+                      </strong>
+                      <span className="admin-status-card__amount">
+                        {formatCurrency(entry.totalAmount)}
+                      </span>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              {/* Fila 3: inteligencia de inventario y demanda */}
+              <div className="admin-metrics-grid">
+                <section className="admin-metrics-section" aria-labelledby="top-products-title">
+                  <h2 id="top-products-title" className="admin-metrics-section__title">
+                    🏆 Top Productos Estrella
+                  </h2>
+                  <p className="admin-metrics-section__subtitle">
+                    Más vendidos en pedidos completados: prioriza su reabastecimiento.
+                  </p>
+
+                  {metrics.topSellingProducts.length === 0 ? (
+                    <p className="admin-empty">
+                      Aún no hay ventas completadas para calcular el ranking.
+                    </p>
+                  ) : (
+                    <div className="admin-table-wrap">
+                      <table className="admin-table">
+                        <caption style={srOnlyStyle}>Productos más vendidos</caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">Producto</th>
+                            <th scope="col">Categoría</th>
+                            <th scope="col" className="admin-cell--num">Unidades</th>
+                            <th scope="col" className="admin-cell--num">Ingresos</th>
+                            <th scope="col" className="admin-cell--num">Stock</th>
+                            <th scope="col">Acción recomendada</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {metrics.topSellingProducts.map((product) => {
+                            const badge = salesStockBadge(product.currentStock);
+                            return (
+                              <tr key={product.productId}>
+                                <td>
+                                  {product.productName}
+                                  <div className="admin-cell__sku">{product.sku}</div>
+                                </td>
+                                <td>{product.categoryName}</td>
+                                <td className="admin-cell--num">{product.unitsSold}</td>
+                                <td className="admin-cell--num">
+                                  {formatCurrency(product.totalRevenue)}
+                                </td>
+                                <td className="admin-cell--num">{product.currentStock}</td>
+                                <td>
+                                  <Badge variant={badge.variant}>{badge.label}</Badge>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+
+                <section className="admin-metrics-section" aria-labelledby="low-demand-title">
+                  <h2 id="low-demand-title" className="admin-metrics-section__title">
+                    📉 Productos de Menor Demanda
+                  </h2>
+                  <p className="admin-metrics-section__subtitle">
+                    Baja rotación o sin ventas: evalúa promociones antes de descontinuar.
+                  </p>
+
+                  {metrics.lowDemandProducts.length === 0 ? (
+                    <p className="admin-empty">
+                      No hay productos activos con baja rotación.
+                    </p>
+                  ) : (
+                    <div className="admin-table-wrap">
+                      <table className="admin-table">
+                        <caption style={srOnlyStyle}>Productos de baja demanda</caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">Producto</th>
+                            <th scope="col">Categoría</th>
+                            <th scope="col" className="admin-cell--num">Unidades</th>
+                            <th scope="col" className="admin-cell--num">Stock estancado</th>
+                            <th scope="col">Nivel de demanda</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {metrics.lowDemandProducts.map((product) => {
+                            const badge = demandLevelBadge(product.demandLevel);
+                            return (
+                              <tr key={product.productId}>
+                                <td>
+                                  {product.productName}
+                                  <div className="admin-cell__sku">{product.sku}</div>
+                                </td>
+                                <td>{product.categoryName}</td>
+                                <td className="admin-cell--num">{product.unitsSold}</td>
+                                <td className="admin-cell--num">{product.currentStock}</td>
+                                <td>
+                                  <Badge variant={badge.variant}>{badge.label}</Badge>
+                                  <div className="admin-cell__secondary">
+                                    Evaluar promoción o descontinuar
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              </div>
+            </>
           ) : null}
         </section>
       )}

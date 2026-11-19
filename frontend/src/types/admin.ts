@@ -8,7 +8,8 @@ export type AdminOrderStatus =
   | 'PAID'
   | 'SHIPPED'
   | 'DELIVERED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'REFUNDED';
 
 /** Resumen administrativo de una orden (AdminOrderSummaryResponse del backend). */
 export interface AdminOrderSummary {
@@ -87,4 +88,60 @@ export interface UpdateProductPayload {
   price: number;
   compareAtPrice?: number;
   vatRate?: number;
+}
+
+// ------------------------------------------------------------------
+// Métricas y analítica comercial (Fase 5F)
+// ------------------------------------------------------------------
+
+/** Resumen financiero (FinancialSummaryResponse del backend). */
+export interface FinancialSummary {
+  completedOrdersCount: number;
+  completedOrdersRevenue: number;
+  cancelledOrdersCount: number;
+  cancelledOrdersLoss: number;
+  refundedOrdersCount: number;
+  refundedOrdersLoss: number;
+  pendingOrdersCount: number;
+  pendingOrdersTotal: number;
+  netRevenue: number;
+  totalLostRevenue: number;
+}
+
+/** Producto más vendido (ProductSalesMetricResponse del backend). */
+export interface ProductSalesMetric {
+  productId: number;
+  productName: string;
+  sku: string;
+  categoryName: string;
+  unitsSold: number;
+  totalRevenue: number;
+  currentStock: number;
+}
+
+/** Producto activo con baja rotación (ProductLowDemandMetricResponse del backend). */
+export interface ProductLowDemandMetric {
+  productId: number;
+  productName: string;
+  sku: string;
+  categoryName: string;
+  unitsSold: number;
+  currentStock: number;
+  demandLevel: 'SIN_VENTAS' | 'BAJA_ROTACION' | string;
+}
+
+/** Fila del desglose de pedidos por estado (OrderStatusBreakdownResponse). */
+export interface OrderStatusBreakdown {
+  status: AdminOrderStatus;
+  label: string;
+  count: number;
+  totalAmount: number;
+}
+
+/** Payload completo del GET /api/admin/metrics/dashboard. */
+export interface AdminDashboardMetrics {
+  financialSummary: FinancialSummary;
+  topSellingProducts: ProductSalesMetric[];
+  lowDemandProducts: ProductLowDemandMetric[];
+  ordersByStatus: OrderStatusBreakdown[];
 }

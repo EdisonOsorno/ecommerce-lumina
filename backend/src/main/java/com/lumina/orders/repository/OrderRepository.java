@@ -28,4 +28,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /** Backoffice (Fase 5A): órdenes filtradas por estado comercial, de la más reciente a la más antigua. */
     List<Order> findByStatusOrderByCreatedAtDesc(OrderStatus status);
+
+    /**
+     * Métricas (Fase 5F): conteo y monto total agrupados por estado.
+     *
+     * @return filas [OrderStatus, count, sum(totalAmount)]
+     */
+    @Query("SELECT o.status, COUNT(o), COALESCE(SUM(o.totalAmount), 0) FROM Order o GROUP BY o.status")
+    List<Object[]> countAndSumTotalByStatus();
 }
